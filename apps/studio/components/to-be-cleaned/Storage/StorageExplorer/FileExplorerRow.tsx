@@ -52,8 +52,8 @@ export const RowIcon = ({ view, status, fileType, mimeType }: any) => {
       fileType === STORAGE_ROW_TYPES.BUCKET
         ? `${BASE_PATH}/img/bucket-filled.svg`
         : fileType === STORAGE_ROW_TYPES.FOLDER
-        ? `${BASE_PATH}/img/folder-filled.svg`
-        : `${BASE_PATH}/img/file-filled.svg`
+          ? `${BASE_PATH}/img/folder-filled.svg`
+          : `${BASE_PATH}/img/file-filled.svg`
     return (
       <SVG
         src={iconSrc}
@@ -300,8 +300,8 @@ const FileExplorerRow = ({
     view === STORAGE_VIEWS.LIST && item.isCorrupted
       ? `calc(100% - 60px)`
       : view === STORAGE_VIEWS.LIST && !item.isCorrupted
-      ? `calc(100% - 50px)`
-      : '100%'
+        ? `calc(100% - 50px)`
+        : '100%'
 
   if (item.status === STORAGE_ROW_STATUS.EDITING) {
     return <FileExplorerRowEditing view={view} item={item} columnIndex={columnIndex} />

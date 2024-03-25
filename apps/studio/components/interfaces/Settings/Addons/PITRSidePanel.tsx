@@ -165,8 +165,8 @@ const PITRSidePanel = () => {
         isFreePlan
           ? 'Unable to enable point in time recovery on a free plan'
           : !canUpdatePitr
-          ? 'You do not have permission to update PITR'
-          : undefined
+            ? 'You do not have permission to update PITR'
+            : undefined
       }
       header={
         <div className="flex items-center justify-between">

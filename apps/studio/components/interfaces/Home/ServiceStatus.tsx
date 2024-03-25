@@ -152,8 +152,8 @@ const ServiceStatus = () => {
                   {service.isLoading
                     ? 'Checking status'
                     : service.isSuccess
-                    ? 'No issues'
-                    : 'Unable to connect'}
+                      ? 'No issues'
+                      : 'Unable to connect'}
                 </p>
               </div>
               {service.isLoading ? (

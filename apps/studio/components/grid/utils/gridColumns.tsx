@@ -54,8 +54,8 @@ export function getGridColumns(
     const columnWidth = options?.defaultWidth
       ? options.defaultWidth
       : columnDefaultWidth < columnWidthBasedOnName
-      ? columnWidthBasedOnName
-      : columnDefaultWidth
+        ? columnWidthBasedOnName
+        : columnDefaultWidth
 
     const columnDefinition: CalculatedColumn<SupaRow> = {
       key: x.name,

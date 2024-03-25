@@ -157,15 +157,15 @@ const UpcomingInvoice = ({ slug }: UpcomingInvoiceProps) => {
                           {fee.usage_original
                             ? `${formatUsage(fee.usage_metric!, fee.usage_original)}`
                             : fee.quantity
-                            ? fee.quantity
-                            : null}
+                              ? fee.quantity
+                              : null}
                         </td>
                         <td className="py-2 text-sm">
                           {fee.unit_price_desc
                             ? `${fee.unit_price_desc}`
                             : fee.unit_price
-                            ? `$${fee.unit_price}`
-                            : null}
+                              ? `$${fee.unit_price}`
+                              : null}
                         </td>
                         <td className="py-2 text-sm text-right max-w-[70px]">${fee.amount ?? 0}</td>
                       </tr>

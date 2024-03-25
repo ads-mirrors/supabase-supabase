@@ -98,8 +98,8 @@ const SupportForm = ({ setSentCategory }: SupportFormProps) => {
     selectedProjectFromUrl !== undefined
       ? selectedProjectFromUrl.ref
       : projects.length > 0
-      ? projects[0].ref
-      : 'no-project'
+        ? projects[0].ref
+        : 'no-project'
   )
 
   const selectedOrganizationSlug =
