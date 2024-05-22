@@ -44,6 +44,10 @@ const ExitSurveyModal = ({ visible, subscription, onClose }: ExitSurveyModalProp
     ) ?? []
   const hasComputeInstance = projectsWithComputeInstances.length > 0
 
+  const willDowngradeHappenInstantly =
+    !subscription?.billing_via_partner ||
+    (subscription?.billing_via_partner && subscription?.billing_partner !== 'fly')
+
   function reducer(state: any, action: any) {
     if (includes(state, action.target.value)) {
       return without(state, action.target.value)
@@ -93,9 +97,11 @@ const ExitSurveyModal = ({ visible, subscription, onClose }: ExitSurveyModalProp
     }
 
     toast.success(
-      hasComputeInstance
-        ? 'Your organization has been downgraded and your projects are currently restarting to update their compute instances'
-        : 'Successfully downgraded organization to the free plan',
+      willDowngradeHappenInstantly
+        ? hasComputeInstance
+          ? 'Successfully downgraded organization to the Free plan. Your projects are currently restarting to update their compute instances.'
+          : 'Successfully downgraded organization to the Free plan'
+        : 'Your organization is scheduled for the downgrade at the end of your current billing cycle',
       { duration: hasComputeInstance ? 8000 : 4000 }
     )
 
@@ -182,11 +188,9 @@ const ExitSurveyModal = ({ visible, subscription, onClose }: ExitSurveyModalProp
               <Alert
                 withIcon
                 variant="warning"
-                title={`${projectsWithComputeInstances.length} of your project${
-                  projectsWithComputeInstances.length > 1 ? 's' : ''
-                } will be restarted upon hitting confirm`}
+                title={`${projectsWithComputeInstances.length} of your projects will be restarted ${willDowngradeHappenInstantly ? 'upon clicking confirm' : 'once the downgrade takes effect at the end of your current billing cycle'}`}
               >
-                This is due to changes in compute instances from the downgrade. Affected project(s)
+                This is due to changes in compute instances from the downgrade. Affected projects
                 include {projectsWithComputeInstances.map((project) => project.name).join(', ')}.
               </Alert>
             )}
@@ -194,9 +198,11 @@ const ExitSurveyModal = ({ visible, subscription, onClose }: ExitSurveyModalProp
         </Modal.Content>
 
         <div className="flex items-center justify-between border-t px-4 py-4">
-          <p className="text-xs text-foreground-lighter">
-            The unused amount for the remaining of your billing cycle will be refunded as credits
-          </p>
+          {willDowngradeHappenInstantly && (
+            <p className="text-xs text-foreground-lighter">
+              The unused amount for the remaining of your billing cycle will be refunded as credits
+            </p>
+          )}
           <div className="flex items-center space-x-2">
             <Button type="default" onClick={() => onClose()}>
               Cancel
