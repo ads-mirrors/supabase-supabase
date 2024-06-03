@@ -23,7 +23,7 @@ const ChangePaymentMethodModal = ({
       onSuccess: () => {
         toast.success(
           `Successfully changed payment method to the card ending with ${
-            selectedPaymentMethod!.card.last4
+            selectedPaymentMethod!.card!.last4
           }`
         )
         onClose()
@@ -55,7 +55,7 @@ const ChangePaymentMethodModal = ({
     <Modal
       visible={selectedPaymentMethod !== undefined}
       size="medium"
-      header={`Confirm to use payment method ending with ${selectedPaymentMethod?.card.last4}`}
+      header={`Confirm to use payment method ending with ${selectedPaymentMethod?.card?.last4}`}
       onCancel={() => onClose()}
       customFooter={
         <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ const ChangePaymentMethodModal = ({
         <Modal.Content>
           <p className="text-sm">
             Upon clicking confirm, all future charges will be deducted from the card ending with{' '}
-            {selectedPaymentMethod?.card.last4}. There are no immediate charges.
+            {selectedPaymentMethod?.card?.last4}. There are no immediate charges.
           </p>
         </Modal.Content>
       </div>

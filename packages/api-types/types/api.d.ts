@@ -2820,6 +2820,23 @@ export interface components {
       role_id: number
       role_scoped_projects?: string[]
     }
+    PaymentMethodCard: {
+      brand: string
+      exp_month: number
+      exp_year: number
+      last4: string
+    }
+    PaymentV2: {
+      id: string
+      card?: components['schemas']['PaymentMethodCard']
+      created: number
+      type: string
+      is_default: boolean
+    }
+    PaymentsResponseV2: {
+      defaultPaymentMethodId: string | null
+      data: components['schemas']['PaymentV2'][]
+    }
     Payment: {
       id: string
       object: string
@@ -2876,54 +2893,6 @@ export interface components {
     }
     DetachPaymentMethodBody: {
       card_id: string
-    }
-    DetachPaymentResponse: {
-      id: string
-      object: string
-      acss_debit?: Record<string, never>
-      affirm?: Record<string, never>
-      afterpay_clearpay?: Record<string, never>
-      alipay?: Record<string, never>
-      au_becs_debit?: Record<string, never>
-      bacs_debit?: Record<string, never>
-      bancontact?: Record<string, never>
-      billing_details: Record<string, never>
-      blik?: Record<string, never>
-      boleto?: Record<string, never>
-      card?: Record<string, never>
-      card_present?: Record<string, never>
-      created: number
-      customer: Record<string, never>
-      customer_balance?: Record<string, never>
-      eps?: Record<string, never>
-      fpx?: Record<string, never>
-      giropay?: Record<string, never>
-      grabpay?: Record<string, never>
-      ideal?: Record<string, never>
-      interac_present?: Record<string, never>
-      klarna?: Record<string, never>
-      konbini?: Record<string, never>
-      link?: Record<string, never>
-      livemode: boolean
-      metadata: Record<string, never>
-      oxxo?: Record<string, never>
-      p24?: Record<string, never>
-      paynow?: Record<string, never>
-      promptpay?: Record<string, never>
-      radar_options?: Record<string, never>
-      sepa_debit?: Record<string, never>
-      sofort?: Record<string, never>
-      type: string
-      us_bank_account?: Record<string, never>
-      wechat_pay?: Record<string, never>
-      lastResponse: {
-        headers?: Record<string, never>
-        requestId?: string
-        statusCode?: number
-        apiVersion?: string
-        idempotencyKey?: string
-        stripeAccount?: string
-      }
     }
     HCaptchaBody: {
       hcaptchaToken: string
@@ -7568,6 +7537,12 @@ export interface operations {
   }
   /** Detach Stripe payment method with the given card ID */
   PaymentsController_detachPaymentMethod: {
+    parameters: {
+      path: {
+        /** @description Organization slug */
+        slug: string
+      }
+    }
     requestBody: {
       content: {
         'application/json': components['schemas']['DetachPaymentMethodBody']
@@ -7575,9 +7550,7 @@ export interface operations {
     }
     responses: {
       200: {
-        content: {
-          'application/json': components['schemas']['DetachPaymentResponse']
-        }
+        content: never
       }
       403: {
         content: never
