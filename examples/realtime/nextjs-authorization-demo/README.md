@@ -18,6 +18,7 @@ Each room restricts users authorized by applying RLS policies applied to the `pu
 4. Copy the project's `URL` and `anon` API key from your project's [API Settings](https://supabase.com/dashboard/project/_/settings/api), and paste them into your `.env.local`.
 5. `npm install`
 6. `npm run dev`
+7. Create a room and then invite a user using the [/invite email](#adding-user-to-channel) command.
 
 ## How It Looks
 
@@ -155,18 +156,18 @@ GRANT INSERT ON TABLE public.profiles TO supabase_auth_admin;
 
 ## Coding Concerns
 
-* Check we're using the `2.10.0` version of `@supabase/realtime-js`
+* Check that you're using `@supabase/supabase-js` v2.44.0 or later
 * You need to define that the channel is private using the new configuration field during channel creation:
   ```typescript
-  let channel = supabase.realtime.channel(selectedRoom, {
-    config: { broadcast: { self: true }, private: true },
+  const channel = supabase.realtime.channel(selectedRoom, {
+    config: { private: true },
   })
   ```
 
-You can check `app/protected/page.tsx` for more information regarding this
+You can check `app/protected/page.tsx` for more information regarding this.
 
 ## Adding user to channel
 
 Type `/invite <email>` of an existing user and they will be added to the channel.
 
-![](invite.png)
+![invite user to room](invite.png)
