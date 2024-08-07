@@ -1,27 +1,13 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useProjectSettingsGotoCommands() {
+export function useProjectSettingsGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
-    [
-      {
-        id: 'nav-project-settings',
-        name: 'Go to Project Settings',
-        route: `/project/${ref}/settings/general`,
-        icon: () => <ArrowRight />,
-      },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
+    'Navigate',
     [
       {
         id: 'nav-project-settings-general',
@@ -126,6 +112,6 @@ export function useProjectSettingsGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

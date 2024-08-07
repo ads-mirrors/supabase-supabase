@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 import { PermissionAction } from '@supabase/shared-types/out/constants'
 import { useParams } from 'common'
-import { Button } from 'ui'
+import { Button, cn } from 'ui'
 import {
   type Message,
   MessageRole,
@@ -76,9 +76,10 @@ const useSaveGeneratedSql = () => {
 export interface SQLOutputActionsProps {
   answer: string
   messages: Message[]
+  className?: string
 }
 
-export function SQLOutputActions({ answer, messages }: SQLOutputActionsProps) {
+export function SQLOutputActions({ answer, messages, className }: SQLOutputActionsProps) {
   const { ref } = useParams()
   const saveGeneratedSql = useSaveGeneratedSql()
 
@@ -135,7 +136,7 @@ export function SQLOutputActions({ answer, messages }: SQLOutputActionsProps) {
   }, [isSaved])
 
   return (
-    <div className="flex items-center justify-end space-x-2">
+    <div className={cn('flex items-center justify-end space-x-2', className)}>
       <CopyToClipboard text={answer?.replace(/```.*/g, '').trim()}>
         <Button
           type="default"

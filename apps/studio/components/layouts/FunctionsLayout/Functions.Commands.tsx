@@ -1,22 +1,21 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useFunctionsGotoCommands() {
+export function useFunctionsGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
         id: 'nav-functions',
-        name: 'Go to Edge Functions',
+        name: 'Edge Functions',
         route: `/project/${ref}/functions`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

@@ -1,27 +1,13 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useAuthGotoCommands() {
+export function useAuthGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
-    [
-      {
-        id: 'nav-auth',
-        name: 'Go to Auth',
-        route: `/project/${ref}/auth/users`,
-        icon: () => <ArrowRight />,
-      },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
+    'Navigate',
     [
       {
         id: 'nav-auth-users',
@@ -59,6 +45,6 @@ export function useAuthGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

@@ -1,27 +1,13 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useDatabaseGotoCommands() {
+export function useDatabaseGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
-    [
-      {
-        id: 'nav-database',
-        name: 'Go to Database',
-        route: `/project/${ref}/database/tables`,
-        icon: () => <ArrowRight />,
-      },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
+    'Navigate',
     [
       {
         id: 'nav-database-tables',
@@ -94,6 +80,6 @@ export function useDatabaseGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

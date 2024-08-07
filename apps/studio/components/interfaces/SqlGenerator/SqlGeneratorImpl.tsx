@@ -1,11 +1,11 @@
-import { AlertTriangle, CornerDownLeft, User } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { AlertTriangle, User } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useEffectOnce } from 'react-use'
 import { format } from 'sql-formatter'
 
-import { useProjectContext } from 'components/layouts/ProjectLayout/ProjectContext'
 import { useEntityDefinitionsQuery } from 'data/database/entity-definitions-query'
 import { useAllowSendAiSchema } from 'hooks/misc/useAllowSendAiSchema'
+import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import { useAppStateSnapshot } from 'state/app-state'
 import {
   AiIconAnimation,
@@ -21,6 +21,7 @@ import {
   TabsList_Shadcn_,
   TabsTrigger_Shadcn_,
   cn,
+  Input_Shadcn_,
 } from 'ui'
 import {
   BadgeExperimental,
@@ -29,7 +30,6 @@ import {
   useQuery,
   useSetQuery,
 } from 'ui-patterns/CommandMenu'
-import { InputCheckComposition } from 'ui-patterns/InputCheckComposition'
 import type { UseAiChatOptions } from 'ui-patterns/CommandMenu/prepackaged/ai'
 import {
   AiWarning,
@@ -37,21 +37,22 @@ import {
   MessageStatus,
   useAiChat,
 } from 'ui-patterns/CommandMenu/prepackaged/ai'
+import type { AiMetadataSkipReason } from './SqlGenerator.Alerts'
 import { ExcludeSchemaAlert, IncludeSchemaAlert } from './SqlGenerator.Alerts'
 import { generatePrompt, SAMPLE_QUERIES } from './SqlGenerator.utils'
 import { SQLOutputActions } from './SqlOutputActions'
 
 function useSchemaMetadataForAi() {
   const allowed = useAllowSendAiSchema()
-  const { project: selectedProject } = useProjectContext()
+  const project = useSelectedProject()
 
-  const includeMetadata = allowed && !!selectedProject
-  const metadataSkipReason = !allowed ? 'forbidden' : ('missing_project' as const)
+  const includeMetadata = allowed && !!project
+  const metadataSkipReason: AiMetadataSkipReason = !project ? 'no_project' : 'forbidden'
 
   const { data } = useEntityDefinitionsQuery(
     {
-      projectRef: selectedProject?.ref,
-      connectionString: selectedProject?.connectionString,
+      projectRef: project?.ref,
+      connectionString: project?.connectionString,
     },
     { enabled: includeMetadata }
   )
@@ -124,11 +125,16 @@ function useAiSqlGeneration() {
     handleSubmit,
     handleReset,
     usesMetadata: schemaMetadata.includeMetadata,
+    metadataSkipReason: schemaMetadata.metadataSkipReason,
   }
 }
 
 export default function SqlGeneratorImpl() {
   const { showGenerateSqlModal, setShowGenerateSqlModal } = useAppStateSnapshot()
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const timeoutHandle = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(timeoutHandle.current), [])
 
   const {
     query,
@@ -140,19 +146,35 @@ export default function SqlGeneratorImpl() {
     handleSubmit,
     handleReset,
     usesMetadata,
+    metadataSkipReason,
   } = useAiSqlGeneration()
 
   return (
     <Modal
-      header="Generate SQL"
+      header={
+        <span className="flex items-center justify-between gap-2">
+          Generate SQL
+          <BadgeExperimental className="w-fit" />
+        </span>
+      }
+      hideClose
       hideFooter
       visible={showGenerateSqlModal}
-      onCancel={() => setShowGenerateSqlModal(false)}
-      className="w-11/12 !max-w-3xl"
+      onOpenAutoFocus={() => {
+        timeoutHandle.current = setTimeout(() => inputRef.current?.focus())
+      }}
+      onCancel={() => {
+        if (messages.length > 0) {
+          handleReset()
+          timeoutHandle.current = setTimeout(() => inputRef.current?.focus())
+        } else {
+          setShowGenerateSqlModal(false)
+        }
+      }}
+      className="w-11/12 !max-w-3xl h-4/5 max-h-[800px] grid-rows-[min-content,_1fr] bg-overlay"
     >
       <Command_Shadcn_ className="p-4">
-        <BadgeExperimental className="w-fit mb-4" />
-        <div className={cn('h-[min(800px,60dvh)] max-h-[min(800px,60dvh)] overflow-auto')}>
+        <div className="flex-grow overflow-auto">
           {messages.length > 0 && <Messages messages={messages} handleReset={handleReset} />}
           {messages.length === 0 && !hasError && (
             <EmptyState query={query} handleSubmit={handleSubmit} />
@@ -160,9 +182,13 @@ export default function SqlGeneratorImpl() {
           {hasError && <ErrorMessage handleReset={handleReset} />}
         </div>
         <div className="flex flex-col gap-4">
-          {usesMetadata ? <IncludeSchemaAlert /> : <ExcludeSchemaAlert />}
-          <InputCheckComposition
-            autoFocus
+          {usesMetadata ? (
+            <IncludeSchemaAlert />
+          ) : (
+            <ExcludeSchemaAlert metadataSkipReason={metadataSkipReason} />
+          )}
+          <Input_Shadcn_
+            ref={inputRef}
             className="bg-alternative rounded [&_input]:pr-32 md:[&_input]:pr-40"
             placeholder={
               isLoading || isResponding
@@ -234,7 +260,7 @@ function Messages({
     switch (message.role) {
       case MessageRole.User:
         return (
-          <div className={cn('flex gap-6 mb-6', X_PADDING, '[overflow-anchor:none]')}>
+          <div className={cn('w-full', 'flex gap-6 mb-6', X_PADDING, '[overflow-anchor:none]')}>
             <UserAvatar />
             <div className="prose text-foreground-light text-sm">{message.content}</div>
           </div>
@@ -253,8 +279,8 @@ function Messages({
         const cantHelp = answer.replace(/^-- /, '') === "Sorry, I don't know how to help with that."
 
         return (
-          <div className={cn('mb-[150px]', '[overflow-anchor:none]', X_PADDING)}>
-            <div className={cn('flex gap-6 mb-6', '[overflow-anchor: none')}>
+          <div className={cn('w-full', X_PADDING, '[overflow-anchor:none]')}>
+            <div className={cn('w-full', 'flex gap-6 mb-6', '[overflow-anchor:none]')}>
               <AiIconAnimation
                 allowHoverEffect
                 loading={
@@ -275,13 +301,13 @@ function Messages({
                   </Button>
                 </div>
               ) : (
-                <div className="flex-grow gap-y-2">
+                <div className="min-w-0 flex-grow flex flex-col">
                   <CodeBlock
                     hideCopy
                     language="sql"
                     className={cn(
                       'relative',
-                      'prose max-w-none',
+                      'prose max-w-[initial]',
                       '!mb-0 !rounded-b-none',
                       'bg-surface-100'
                     )}
@@ -290,7 +316,7 @@ function Messages({
                   </CodeBlock>
                   <AiWarning className="!rounded-t-none border-muted" />
                   {message.status === MessageStatus.Complete && (
-                    <SQLOutputActions answer={answer} messages={messages} />
+                    <SQLOutputActions answer={answer} messages={messages} className="mt-2" />
                   )}
                 </div>
               )}
@@ -308,7 +334,27 @@ function EmptyState({
   query: string
   handleSubmit: (query: string) => void
 }) {
-  const sampleCategories = [...new Set(SAMPLE_QUERIES.map((sample) => sample.category))]
+  const [activeTab, setActiveTab] = useState(SAMPLE_QUERIES[0].category)
+
+  useEffect(() => {
+    function handleSwitchTab(event: KeyboardEvent) {
+      if (query || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) {
+        return
+      }
+
+      const activeSampleIndex = SAMPLE_QUERIES.findIndex(
+        (samples) => samples.category === activeTab
+      )!
+      const nextIndex =
+        event.key === 'ArrowRight'
+          ? Math.min(activeSampleIndex + 1, SAMPLE_QUERIES.length - 1)
+          : Math.max(0, activeSampleIndex - 1)
+      setActiveTab(SAMPLE_QUERIES[nextIndex].category)
+    }
+
+    document.addEventListener('keydown', handleSwitchTab)
+    return () => document.removeEventListener('keydown', handleSwitchTab)
+  }, [query, activeTab])
 
   return (
     <>
@@ -319,35 +365,37 @@ function EmptyState({
         Here are some example prompts to try out:
       </p>
       <hr className="my-4" />
-      <CommandList_Shadcn_>
-        <Tabs_Shadcn_ defaultValue={sampleCategories[0]}>
-          <TabsList_Shadcn_>
-            {sampleCategories.map((category) => (
-              <TabsTrigger_Shadcn_ value={category} />
-            ))}
-          </TabsList_Shadcn_>
-          {sampleCategories.map((category) => (
-            <TabsContent_Shadcn_ value={category}>
-              {SAMPLE_QUERIES.find((item) => item.category === category)?.queries.map(
-                (sampleQuery) => (
-                  <CommandItem_Shadcn_
-                    key={sampleQuery.replace(/\s+/g, '_')}
-                    className={generateCommandClassNames(false)}
-                    onSelect={() => {
-                      if (!query) {
-                        handleSubmit(sampleQuery)
-                      }
-                    }}
-                  >
-                    <AiIconAnimation allowHoverEffect />
-                    {sampleQuery}
-                  </CommandItem_Shadcn_>
-                )
-              )}
+      <Tabs_Shadcn_
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value)}
+        className="focus-visible:ring-0"
+      >
+        <TabsList_Shadcn_ className="gap-4">
+          {SAMPLE_QUERIES.map((samples) => (
+            <TabsTrigger_Shadcn_ value={samples.category}>{samples.category}</TabsTrigger_Shadcn_>
+          ))}
+        </TabsList_Shadcn_>
+        <CommandList_Shadcn_>
+          {SAMPLE_QUERIES.map((samples) => (
+            <TabsContent_Shadcn_ value={samples.category}>
+              {samples.queries.map((sampleQuery) => (
+                <CommandItem_Shadcn_
+                  key={sampleQuery.replace(/\s+/g, '_')}
+                  className={generateCommandClassNames(false)}
+                  onSelect={() => {
+                    if (!query) {
+                      handleSubmit(sampleQuery)
+                    }
+                  }}
+                >
+                  <AiIconAnimation allowHoverEffect />
+                  {sampleQuery}
+                </CommandItem_Shadcn_>
+              ))}
             </TabsContent_Shadcn_>
           ))}
-        </Tabs_Shadcn_>
-      </CommandList_Shadcn_>
+        </CommandList_Shadcn_>
+      </Tabs_Shadcn_>
     </>
   )
 }

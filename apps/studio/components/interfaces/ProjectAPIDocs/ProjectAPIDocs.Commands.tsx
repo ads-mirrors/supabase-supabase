@@ -1,28 +1,20 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useParams } from 'common'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useApiDocsGotoCommands() {
+export function useApiDocsGotoCommands(options?: CommandOptions) {
   let { ref } = useParams()
   ref ||= '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
         id: 'nav-api',
-        name: 'Go to Project API Docs',
+        name: 'Project API Docs',
         route: `/project/${ref}/api`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
-    [
       {
         id: 'nav-api-auth',
         name: 'Auth Docs',
@@ -42,6 +34,6 @@ export function useApiDocsGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

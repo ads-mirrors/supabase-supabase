@@ -1,28 +1,20 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useLogsGotoCommands() {
+export function useLogsGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
-        id: 'nav-logs',
-        name: 'Go to Logs',
+        id: 'nav-logs-explorer',
+        name: 'Logs Explorer',
         route: `/project/${ref}/logs/explorer`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
-    [
       {
         id: 'nav-logs-postgres',
         name: 'Postgres Logs',
@@ -60,6 +52,6 @@ export function useLogsGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

@@ -1,28 +1,20 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useReportsGotoCommands() {
+export function useReportsGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
         id: 'nav-reports',
-        name: 'Go to Reports',
+        name: 'Reports',
         route: `/project/${ref}/reports`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
-    [
       {
         id: 'nav-reports-api',
         name: 'API Reports',
@@ -48,6 +40,6 @@ export function useReportsGotoCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

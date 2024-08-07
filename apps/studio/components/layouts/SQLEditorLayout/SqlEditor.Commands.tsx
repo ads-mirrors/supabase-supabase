@@ -1,23 +1,22 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-const useSqlEditorGotoCommands = () => {
+const useSqlEditorGotoCommands = (options?: CommandOptions) => {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
         id: 'nav-sql-editor',
-        name: 'Go to SQL Editor',
+        name: 'SQL Editor',
         route: `/project/${ref}/sql`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }
 

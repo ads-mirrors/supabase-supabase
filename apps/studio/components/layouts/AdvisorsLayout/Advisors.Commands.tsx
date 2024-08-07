@@ -1,31 +1,20 @@
-import { AlertTriangle, ArrowRight } from 'lucide-react'
-
-import { orderCommandSectionsByPriority } from 'components/interfaces/App/CommandMenu/ordering'
-import { useProjectLintsQuery } from 'data/lint/lint-query'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useAdvisorsGoToCommands() {
+export function useAdvisorsGoToCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
-        id: 'nav-advisors',
-        name: 'Go to Advisors',
-        value: 'Go to Advisors: Security',
+        id: 'nav-advisors-security',
+        name: 'Security Advisor',
         route: `/project/${ref}/advisors/security`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
-    ],
-    { deps: [ref] }
-  )
-
-  useRegisterCommands(
-    'Find',
-    [
       {
         id: 'nav-advisors-performance',
         name: 'Performance Advisor',
@@ -33,38 +22,6 @@ export function useAdvisorsGoToCommands() {
         defaultHidden: true,
       },
     ],
-    { deps: [ref] }
-  )
-}
-
-export function useAdvisorsLintCommands() {
-  const project = useSelectedProject()
-  const { data } = useProjectLintsQuery({
-    projectRef: project?.ref,
-  })
-  const ref = project?.ref || '_'
-
-  const numberImportantLints = (data ?? []).filter(
-    (lint) => lint.level === 'ERROR' || lint.level === 'WARN'
-  ).length
-
-  useRegisterCommands(
-    'Advisor warnings',
-    [
-      {
-        id: 'advisor-warnings',
-        name: `Advisor: Address ${numberImportantLints} security and performance issues`,
-        icon: () => <AlertTriangle className="text-amber-800" />,
-        route: `/project/${ref}/advisors/security`,
-      },
-    ],
-    {
-      enabled: numberImportantLints > 0,
-      deps: [numberImportantLints, ref],
-      orderSection: orderCommandSectionsByPriority,
-      sectionMeta: {
-        priority: 1,
-      },
-    }
+    { ...options, deps: [ref] }
   )
 }

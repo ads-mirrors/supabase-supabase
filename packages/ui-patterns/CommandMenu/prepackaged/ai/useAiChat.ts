@@ -11,6 +11,9 @@ const messageReducer = (state: Message[], messageAction: MessageAction) => {
   let current = [...state]
   const { type } = messageAction
 
+  console.log('STATE:', state)
+  console.log('ACTION:', messageAction)
+
   switch (type) {
     case 'new': {
       const { message } = messageAction
@@ -172,6 +175,7 @@ const useAiChat = ({ messageTemplate = (message) => message, setIsLoading }: Use
     eventSourceRef.current = undefined
     setIsResponding(false)
     setHasError(false)
+    setCurrentMessageIndex(1)
     dispatchMessage({
       type: 'reset',
     })

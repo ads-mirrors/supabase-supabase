@@ -1,22 +1,21 @@
-import { ArrowRight } from 'lucide-react'
-
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 
-export function useTableEditorGotoCommands() {
+export function useTableEditorGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Go to',
+    'Navigate',
     [
       {
         id: 'nav-table-editor',
-        name: 'Go to Table Editor',
+        name: 'Table Editor',
         route: `/project/${ref}/editor`,
-        icon: () => <ArrowRight />,
+        defaultHidden: true,
       },
     ],
-    { deps: [ref] }
+    { ...options, deps: [ref] }
   )
 }

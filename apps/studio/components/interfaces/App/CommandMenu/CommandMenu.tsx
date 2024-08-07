@@ -1,20 +1,20 @@
 import { IS_PLATFORM } from 'common'
-import { useAdvisorsLintCommands } from 'components/layouts/AdvisorsLayout/Advisors.Commands'
+import { useBranchCommands } from 'components/interfaces/BranchManagement/Branch.Commands'
+import { useGenerateSqlCommand } from 'components/interfaces/SqlGenerator/SqlGenerator.Commands'
+import { useLayoutNavCommands } from 'components/layouts/useLayoutNavCommands'
 import { CommandHeader, CommandInput, CommandList, CommandMenu } from 'ui-patterns/CommandMenu'
 import { useChangelogCommand } from 'ui-patterns/CommandMenu/prepackaged/Changelog'
 import { useDocsAiCommands } from 'ui-patterns/CommandMenu/prepackaged/DocsAi'
 import { useDocsSearchCommands } from 'ui-patterns/CommandMenu/prepackaged/DocsSearch'
-import { useSupportCommands } from 'ui-patterns/CommandMenu/prepackaged/Support'
 import { useThemeSwitcherCommands } from 'ui-patterns/CommandMenu/prepackaged/ThemeSwitcher'
-import { useBranchCommands } from 'components/interfaces/BranchManagement/Branch.Commands'
 import { useApiKeysCommands } from './ApiKeys'
 import { useProjectSwitchCommand } from './ProjectSwitcher'
-import { useLayoutNavCommands } from 'components/layouts/useLayoutNavCommands'
 import { useApiUrlCommand } from './ApiUrl'
+import { useSupportCommands } from './Support'
 import { orderCommandSectionsByPriority } from './ordering'
 
 export default function StudioCommandMenu() {
-  useAdvisorsLintCommands()
+  useGenerateSqlCommand()
   useApiKeysCommands()
   useApiUrlCommand()
   useProjectSwitchCommand()
@@ -26,7 +26,7 @@ export default function StudioCommandMenu() {
   useDocsAiCommands({
     options: { orderSection: orderCommandSectionsByPriority, sectionMeta: { priority: 3 } },
   })
-  useSupportCommands({ enabled: IS_PLATFORM })
+  useSupportCommands()
   useChangelogCommand({ enabled: IS_PLATFORM })
   useThemeSwitcherCommands()
 

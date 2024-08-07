@@ -44,6 +44,7 @@ import { StudioCommandMenu } from 'components/interfaces/App/CommandMenu'
 import { AppBannerContextProvider } from 'components/interfaces/App/AppBannerWrapperContext'
 import { FeaturePreviewContextProvider } from 'components/interfaces/App/FeaturePreview/FeaturePreviewContext'
 import FeaturePreviewModal from 'components/interfaces/App/FeaturePreview/FeaturePreviewModal'
+import { GenerateSql } from 'components/interfaces/SqlGenerator/SqlGenerator'
 import { ErrorBoundaryState } from 'components/ui/ErrorBoundaryState'
 import FlagProvider from 'components/ui/Flag/FlagProvider'
 import PageTelemetry from 'components/ui/PageTelemetry'
@@ -177,6 +178,7 @@ function CustomApp({ Component, pageProps }: AppPropsWithLayout) {
                               <FeaturePreviewContextProvider>
                                 {getLayout(<Component {...pageProps} />)}
                                 <StudioCommandMenu />
+                                <GenerateSql />
                                 <FeaturePreviewModal />
                               </FeaturePreviewContextProvider>
                             </AppBannerWrapper>
