@@ -10,7 +10,7 @@ const DEFAULT_PRIORITY = 10
  * option `{ sectionMeta: { priority: number } }`.
  *
  * The priority rankings are roughly as follows:
- * 1. Super important, stick to top. Reserved for lint warnings, etc., right now.
+ * 1. Super important, stick to top. Reserved for special cases.
  * 2. We want to highlight this and encourage people to use it.
  * 3. Easy access for most important features/commands.
  */

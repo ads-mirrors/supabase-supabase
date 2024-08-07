@@ -1,19 +1,20 @@
 import { Code } from 'lucide-react'
 
 import { COMMAND_MENU_SECTIONS } from 'components/interfaces/App/CommandMenu/CommandMenu.utils'
-import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
+import { useParams } from 'common'
+import { orderCommandSectionsByPriority } from 'components/interfaces/App/CommandMenu/ordering'
 
 export function useDatabaseGotoCommands(options?: CommandOptions) {
-  const project = useSelectedProject()
-  const ref = project?.ref || '_'
+  let { ref } = useParams()
+  ref ||= '_'
 
   useRegisterCommands(
-    'Query',
+    COMMAND_MENU_SECTIONS.QUERY,
     [
       {
-        id: 'generate-sql',
+        id: 'run-sql',
         name: 'Run SQL',
         route: `/project/${ref}/sql/new`,
         icon: () => <Code />,
@@ -22,6 +23,8 @@ export function useDatabaseGotoCommands(options?: CommandOptions) {
     {
       ...options,
       deps: [ref],
+      orderSection: orderCommandSectionsByPriority,
+      sectionMeta: { priority: 2 },
     }
   )
 

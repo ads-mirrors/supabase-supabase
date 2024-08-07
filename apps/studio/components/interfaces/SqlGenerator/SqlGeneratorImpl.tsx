@@ -14,6 +14,7 @@ import {
   CommandItem_Shadcn_,
   CommandList_Shadcn_,
   Command_Shadcn_,
+  Input_Shadcn_,
   Modal,
   StatusIcon,
   Tabs_Shadcn_,
@@ -21,7 +22,6 @@ import {
   TabsList_Shadcn_,
   TabsTrigger_Shadcn_,
   cn,
-  Input_Shadcn_,
 } from 'ui'
 import {
   BadgeExperimental,
@@ -39,7 +39,7 @@ import {
 } from 'ui-patterns/CommandMenu/prepackaged/ai'
 import type { AiMetadataSkipReason } from './SqlGenerator.Alerts'
 import { ExcludeSchemaAlert, IncludeSchemaAlert } from './SqlGenerator.Alerts'
-import { generatePrompt, SAMPLE_QUERIES } from './SqlGenerator.utils'
+import { SAMPLE_QUERIES, generatePrompt } from './SqlGenerator.utils'
 import { SQLOutputActions } from './SqlOutputActions'
 
 function useSchemaMetadataForAi() {

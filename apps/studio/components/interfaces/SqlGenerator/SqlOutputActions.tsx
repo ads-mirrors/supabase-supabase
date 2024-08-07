@@ -1,32 +1,27 @@
+import { PermissionAction } from '@supabase/shared-types/out/constants'
 import { codeBlock, stripIndent } from 'common-tags'
 import { Check, Clipboard, Save } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import CopyToClipboard from 'react-copy-to-clipboard'
 import toast from 'react-hot-toast'
 
-import { PermissionAction } from '@supabase/shared-types/out/constants'
 import { useParams } from 'common'
-import { Button, cn } from 'ui'
-import {
-  type Message,
-  MessageRole,
-  MessageStatus,
-  queryAi,
-} from 'ui-patterns/CommandMenu/prepackaged/ai'
-
-import { useProjectContext } from 'components/layouts/ProjectLayout/ProjectContext'
-import { type SqlSnippet } from 'data/content/sql-snippets-query'
+import { createSqlSnippetSkeleton } from 'components/interfaces/SQLEditor/SQLEditor.utils'
+import type { SqlSnippet } from 'data/content/sql-snippets-query'
 import { useCheckPermissions } from 'hooks/misc/useCheckPermissions'
+import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import { uuidv4 } from 'lib/helpers'
 import { useProfile } from 'lib/profile'
 import { useSqlEditorStateSnapshot } from 'state/sql-editor'
-import { createSqlSnippetSkeleton } from '../SQLEditor/SQLEditor.utils'
+import { Button, cn } from 'ui'
+import type { Message } from 'ui-patterns/CommandMenu/prepackaged/ai'
+import { MessageRole, MessageStatus, queryAi } from 'ui-patterns/CommandMenu/prepackaged/ai'
 import { formatTitle } from './SqlGenerator.utils'
 
 const useSaveGeneratedSql = () => {
   const { ref } = useParams()
   const { profile } = useProfile()
-  const { project: selectedProject } = useProjectContext()
+  const selectedProject = useSelectedProject()
   const snap = useSqlEditorStateSnapshot()
   const canCreateSQLSnippet = useCheckPermissions(PermissionAction.CREATE, 'user_content', {
     resource: { type: 'sql', owner_id: profile?.id },

@@ -19,6 +19,7 @@ const useSupportCommands = () => {
         {
           id: 'system-status',
           name: 'System Status',
+          value: 'Support: System Status',
           route: 'https://status.supabase.com',
           icon: () => <LifeBuoy />,
         },

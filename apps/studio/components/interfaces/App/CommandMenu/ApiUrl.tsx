@@ -17,7 +17,9 @@ export function useApiUrlCommand() {
     { enabled: !!project }
   )
 
-  const apiUrl = `${settings?.autoApiService.protocol ?? 'https'}://${settings?.autoApiService.endpoint}`
+  const apiUrl = settings?.autoApiService.endpoint
+    ? `${settings.autoApiService.protocol ?? 'https'}://${settings.autoApiService.endpoint}`
+    : undefined
 
   useRegisterCommands(
     COMMAND_MENU_SECTIONS.ACTIONS,
@@ -26,7 +28,7 @@ export function useApiUrlCommand() {
         id: 'api-url',
         name: 'Copy API URL',
         action: () => {
-          copyToClipboard(apiUrl)
+          copyToClipboard(apiUrl ?? '')
           setIsOpen(false)
         },
         icon: () => <Link />,

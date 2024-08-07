@@ -15,7 +15,7 @@ export function useGenerateSqlCommand() {
     COMMAND_MENU_SECTIONS.QUERY,
     [
       {
-        id: 'generate-sql',
+        id: 'generate-sql-ai',
         name: 'Run SQL with Supabase AI',
         action: () => {
           setShowGenerateSqlModal(true)
@@ -27,7 +27,6 @@ export function useGenerateSqlCommand() {
     ],
     {
       enabled: isLoggedIn,
-      deps: [setShowGenerateSqlModal, setQuery],
       orderSection: orderCommandSectionsByPriority,
       sectionMeta: { priority: 2 },
     }

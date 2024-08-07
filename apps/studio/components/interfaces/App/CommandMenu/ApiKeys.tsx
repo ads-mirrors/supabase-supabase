@@ -7,10 +7,10 @@ import { copyToClipboard } from 'lib/helpers'
 import { Badge } from 'ui'
 import type { ICommand } from 'ui-patterns/CommandMenu'
 import {
-  useSetCommandMenuOpen,
+  PageType,
   useRegisterCommands,
   useRegisterPage,
-  PageType,
+  useSetCommandMenuOpen,
   useSetPage,
 } from 'ui-patterns/CommandMenu'
 import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
@@ -27,6 +27,7 @@ export function useApiKeysCommands() {
     { projectRef: project?.ref },
     { enabled: !!project }
   )
+  const ref = project?.ref || '_'
 
   const anonKey = settings?.autoApiService?.defaultApiKey ?? undefined
   const serviceKey = settings?.autoApiService?.serviceApiKey ?? undefined
@@ -69,7 +70,7 @@ export function useApiKeysCommands() {
         !(anonKey || serviceKey) && {
           id: 'api-keys-project-settings',
           name: 'See API keys in Project Settings',
-          route: `/project/${project?.ref ?? '_'}/settings/api`,
+          route: `/project/${ref}/settings/api`,
           icon: () => <Key />,
         },
       ].filter(Boolean) as ICommand[],

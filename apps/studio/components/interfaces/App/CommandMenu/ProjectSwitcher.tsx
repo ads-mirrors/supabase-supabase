@@ -6,7 +6,7 @@ import { PageType, useRegisterCommands, useRegisterPage, useSetPage } from 'ui-p
 import { IS_PLATFORM } from 'common'
 import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
 
-const PROJECT_SWITCHER_PAGE_NAME = 'Swith project'
+const PROJECT_SWITCHER_PAGE_NAME = 'Switch project'
 
 export function useProjectSwitchCommand() {
   const setPage = useSetPage()

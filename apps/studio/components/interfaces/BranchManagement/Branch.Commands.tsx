@@ -40,7 +40,7 @@ export function useBranchCommands() {
         },
       ],
     },
-    { enabled: isBranchingEnabled, deps: [branches] }
+    { enabled: isBranchingEnabled && branches.length > 0, deps: [branches] }
   )
 
   useRegisterCommands(
@@ -55,7 +55,7 @@ export function useBranchCommands() {
       },
     ],
     {
-      enabled: isBranchingEnabled,
+      enabled: isBranchingEnabled && branches.length > 0,
       orderSection: orderCommandSectionsByPriority,
       sectionMeta: { priority: 3 },
     }

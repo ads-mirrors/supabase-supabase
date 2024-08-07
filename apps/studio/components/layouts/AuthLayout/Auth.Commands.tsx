@@ -1,14 +1,14 @@
 import { Lock } from 'lucide-react'
 
 import { COMMAND_MENU_SECTIONS } from 'components/interfaces/App/CommandMenu/CommandMenu.utils'
-import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 import { orderCommandSectionsByPriority } from 'components/interfaces/App/CommandMenu/ordering'
+import { useParams } from 'common'
 
 export function useAuthGotoCommands(options?: CommandOptions) {
-  const project = useSelectedProject()
-  const ref = project?.ref || '_'
+  let { ref } = useParams()
+  ref ||= '_'
 
   useRegisterCommands(
     'Actions',
