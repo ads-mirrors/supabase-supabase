@@ -1,5 +1,6 @@
 import { Table } from 'lucide-react'
 
+import { COMMAND_MENU_SECTIONS } from 'components/interfaces/App/CommandMenu/CommandMenu.utils'
 import { orderCommandSectionsByPriority } from 'components/interfaces/App/CommandMenu/ordering'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
@@ -10,7 +11,7 @@ export function useTableEditorGotoCommands(options?: CommandOptions) {
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Actions',
+    COMMAND_MENU_SECTIONS.ACTIONS,
     [
       {
         id: 'view-data',
@@ -28,7 +29,7 @@ export function useTableEditorGotoCommands(options?: CommandOptions) {
   )
 
   useRegisterCommands(
-    'Navigate',
+    COMMAND_MENU_SECTIONS.NAVIGATE,
     [
       {
         id: 'nav-table-editor',

@@ -13,6 +13,7 @@ import {
   PageType,
   useSetPage,
 } from 'ui-patterns/CommandMenu'
+import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
 import { orderCommandSectionsByPriority } from './ordering'
 
 const API_KEYS_PAGE_NAME = 'API Keys'
@@ -91,7 +92,7 @@ export function useApiKeysCommands() {
   )
 
   useRegisterCommands(
-    'Project tools',
+    COMMAND_MENU_SECTIONS.ACTIONS,
     [
       {
         id: 'api-keys',

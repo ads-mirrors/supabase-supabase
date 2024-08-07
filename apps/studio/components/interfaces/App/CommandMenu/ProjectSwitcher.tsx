@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useProjectsQuery } from 'data/projects/projects-query'
 import { PageType, useRegisterCommands, useRegisterPage, useSetPage } from 'ui-patterns/CommandMenu'
 import { IS_PLATFORM } from 'common'
+import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
 
 const PROJECT_SWITCHER_PAGE_NAME = 'Swith project'
 
@@ -38,7 +39,7 @@ export function useProjectSwitchCommand() {
   )
 
   useRegisterCommands(
-    'Project tools',
+    COMMAND_MENU_SECTIONS.ACTIONS,
     [
       {
         id: 'switch-project',

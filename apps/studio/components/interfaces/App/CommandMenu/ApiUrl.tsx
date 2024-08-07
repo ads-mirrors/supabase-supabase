@@ -5,6 +5,7 @@ import { copyToClipboard } from 'lib/helpers'
 import { Badge } from 'ui'
 import { useRegisterCommands, useSetCommandMenuOpen } from 'ui-patterns/CommandMenu'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
+import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
 import { orderCommandSectionsByPriority } from './ordering'
 
 export function useApiUrlCommand() {
@@ -19,7 +20,7 @@ export function useApiUrlCommand() {
   const apiUrl = `${settings?.autoApiService.protocol ?? 'https'}://${settings?.autoApiService.endpoint}`
 
   useRegisterCommands(
-    'Project tools',
+    COMMAND_MENU_SECTIONS.ACTIONS,
     [
       {
         id: 'api-url',

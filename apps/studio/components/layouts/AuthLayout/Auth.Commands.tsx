@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react'
 
+import { COMMAND_MENU_SECTIONS } from 'components/interfaces/App/CommandMenu/CommandMenu.utils'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
@@ -29,7 +30,7 @@ export function useAuthGotoCommands(options?: CommandOptions) {
   )
 
   useRegisterCommands(
-    'Navigate',
+    COMMAND_MENU_SECTIONS.NAVIGATE,
     [
       {
         id: 'nav-auth-users',

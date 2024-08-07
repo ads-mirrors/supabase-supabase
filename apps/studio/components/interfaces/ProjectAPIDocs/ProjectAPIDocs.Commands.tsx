@@ -1,13 +1,14 @@
 import { useParams } from 'common'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
+import { COMMAND_MENU_SECTIONS } from '../App/CommandMenu/CommandMenu.utils'
 
 export function useApiDocsGotoCommands(options?: CommandOptions) {
   let { ref } = useParams()
   ref ||= '_'
 
   useRegisterCommands(
-    'Navigate',
+    COMMAND_MENU_SECTIONS.NAVIGATE,
     [
       {
         id: 'nav-api',

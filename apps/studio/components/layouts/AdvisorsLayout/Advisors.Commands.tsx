@@ -1,3 +1,4 @@
+import { COMMAND_MENU_SECTIONS } from 'components/interfaces/App/CommandMenu/CommandMenu.utils'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
@@ -7,7 +8,7 @@ export function useAdvisorsGoToCommands(options?: CommandOptions) {
   const ref = project?.ref || '_'
 
   useRegisterCommands(
-    'Navigate',
+    COMMAND_MENU_SECTIONS.NAVIGATE,
     [
       {
         id: 'nav-advisors-security',

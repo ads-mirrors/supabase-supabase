@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { IS_PLATFORM } from 'common'
 import type { ICommand } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
+import { COMMAND_MENU_SECTIONS } from './CommandMenu.utils'
 
 const useSupportCommands = () => {
   const commands = useMemo(
@@ -33,7 +34,7 @@ const useSupportCommands = () => {
     []
   )
 
-  useRegisterCommands('Support', commands, { enabled: IS_PLATFORM })
+  useRegisterCommands(COMMAND_MENU_SECTIONS.SUPPORT, commands, { enabled: IS_PLATFORM })
 }
 
 export { useSupportCommands }

@@ -3,6 +3,7 @@ import { useAppStateSnapshot } from 'state/app-state'
 import { AiIconAnimation } from 'ui'
 import { BadgeExperimental, useRegisterCommands, useSetQuery } from 'ui-patterns/CommandMenu'
 import { orderCommandSectionsByPriority } from '../App/CommandMenu/ordering'
+import { COMMAND_MENU_SECTIONS } from '../App/CommandMenu/CommandMenu.utils'
 
 export function useGenerateSqlCommand() {
   const isLoggedIn = useIsLoggedIn()
@@ -11,7 +12,7 @@ export function useGenerateSqlCommand() {
   const setQuery = useSetQuery()
 
   useRegisterCommands(
-    'Query',
+    COMMAND_MENU_SECTIONS.QUERY,
     [
       {
         id: 'generate-sql',

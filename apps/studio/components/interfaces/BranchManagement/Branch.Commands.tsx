@@ -3,6 +3,7 @@ import { Forward, GitBranch } from 'lucide-react'
 import { useBranchesQuery } from 'data/branches/branches-query'
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import { PageType, useRegisterCommands, useRegisterPage, useSetPage } from 'ui-patterns/CommandMenu'
+import { COMMAND_MENU_SECTIONS } from '../App/CommandMenu/CommandMenu.utils'
 import { orderCommandSectionsByPriority } from '../App/CommandMenu/ordering'
 
 const SWITCH_BRANCH_PAGE_NAME = 'Switch branch'
@@ -43,7 +44,7 @@ export function useBranchCommands() {
   )
 
   useRegisterCommands(
-    'Branches',
+    COMMAND_MENU_SECTIONS.ACTIONS,
     [
       {
         id: 'switch-branch',
