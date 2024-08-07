@@ -1,3 +1,5 @@
+import { Code } from 'lucide-react'
+
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
@@ -5,6 +7,22 @@ import { useRegisterCommands } from 'ui-patterns/CommandMenu'
 export function useDatabaseGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
+
+  useRegisterCommands(
+    'Query',
+    [
+      {
+        id: 'generate-sql',
+        name: 'Run SQL',
+        route: `/project/${ref}/sql/new`,
+        icon: () => <Code />,
+      },
+    ],
+    {
+      ...options,
+      deps: [ref],
+    }
+  )
 
   useRegisterCommands(
     'Navigate',

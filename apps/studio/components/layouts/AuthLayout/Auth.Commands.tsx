@@ -1,10 +1,32 @@
+import { Lock } from 'lucide-react'
+
 import { useSelectedProject } from 'hooks/misc/useSelectedProject'
 import type { CommandOptions } from 'ui-patterns/CommandMenu'
 import { useRegisterCommands } from 'ui-patterns/CommandMenu'
+import { orderCommandSectionsByPriority } from 'components/interfaces/App/CommandMenu/ordering'
 
 export function useAuthGotoCommands(options?: CommandOptions) {
   const project = useSelectedProject()
   const ref = project?.ref || '_'
+
+  useRegisterCommands(
+    'Actions',
+    [
+      {
+        id: 'create-rls-policy',
+        name: 'Create RLS policy',
+        value: 'Create RLS (Row Level Security) policy',
+        route: `/project/${ref}/auth/policies`,
+        icon: () => <Lock />,
+      },
+    ],
+    {
+      ...options,
+      deps: [ref],
+      orderSection: orderCommandSectionsByPriority,
+      sectionMeta: { priority: 3 },
+    }
+  )
 
   useRegisterCommands(
     'Navigate',

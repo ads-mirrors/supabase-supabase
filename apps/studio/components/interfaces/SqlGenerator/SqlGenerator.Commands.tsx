@@ -11,11 +11,11 @@ export function useGenerateSqlCommand() {
   const setQuery = useSetQuery()
 
   useRegisterCommands(
-    'Experimental',
+    'Query',
     [
       {
         id: 'generate-sql',
-        name: 'Generate SQL with Supabase AI',
+        name: 'Run SQL with Supabase AI',
         action: () => {
           setShowGenerateSqlModal(true)
           setQuery('')
