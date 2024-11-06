@@ -261,5 +261,5 @@ The table below shows the actions each role can take on the resources belonging 
 [^2]: Invites sent from a SSO account can only be accepted by another SSO account coming from the same identity provider. This is a security measure that prevents accidental invites to accounts not managed by your company's enterprise systems.
 [^3]: Available on the Enterprise Plan.
 [^4]: Read-Only role is able to access secrets.
-[^5]: Limited to executing SELECT queries. SQLEditor queries run by the Read-Only role are run against the database using the `supabase_read_only_user`. This role has the predefined Postgres role `pg_read_all_data`.
+[^5]: Limited to executing SELECT queries. SQL Editor queries run by the Read-Only role are run against the database using the **supabase_read_only_user**. This role has the [predefined Postgres role pg_read_all_data](https://www.postgresql.org/docs/current/predefined-roles.html).
 [^6]: Listed permissions are for the API and Dashboard. See [^5] for database permissions.
