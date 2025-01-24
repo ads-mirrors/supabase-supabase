@@ -2102,6 +2102,10 @@ export const platform: NavMenuConstant = {
           ],
         },
         {
+          name: 'Credits',
+          url: '/guides/platform/credits',
+        },
+        {
           name: 'Your monthly invoice',
           url: '/guides/platform/your-monthly-invoice',
         },
