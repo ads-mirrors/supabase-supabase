@@ -2859,4 +2859,9 @@ module.exports = [
     source: '/features/ai-query-assistance',
     destination: '/features/ai-assistant',
   },
+  {
+    permanent: true,
+    source: '/features/fly-postgres',
+    destination: '/features/postgres-database',
+  },
 ]
