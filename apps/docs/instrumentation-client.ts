@@ -6,7 +6,12 @@ import * as Sentry from '@sentry/nextjs'
 import { IS_DEV } from './lib/constants'
 
 Sentry.init({
+<<<<<<< HEAD
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+||||||| parent of c25c7cb09d (chore(docs): add sentry monitoring)
+=======
+  dsn: 'https://3c27c63b42048231340b7d640767ad02@o398706.ingest.us.sentry.io/4508132895096832',
+>>>>>>> c25c7cb09d (chore(docs): add sentry monitoring)
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,

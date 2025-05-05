@@ -2,6 +2,7 @@
 // The config you add here will be used whenever the server handles a request.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
+<<<<<<< HEAD
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -10,3 +11,14 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
 })
+||||||| parent of c25c7cb09d (chore(docs): add sentry monitoring)
+=======
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: "https://3c27c63b42048231340b7d640767ad02@o398706.ingest.us.sentry.io/4508132895096832",
+
+  // Setting this option to true will print useful information to the console while you're setting up Sentry.
+  debug: false,
+});
+>>>>>>> c25c7cb09d (chore(docs): add sentry monitoring)
