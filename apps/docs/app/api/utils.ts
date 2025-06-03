@@ -63,6 +63,30 @@ export class NoDataError<Details extends ObjectOrNever = never> extends ApiError
   }
 }
 
+export class CollectionQueryError extends Error {
+  constructor(
+    message: string,
+    public readonly queryErrors: {
+      count?: PostgrestError
+      data?: PostgrestError
+    }
+  ) {
+    super(message)
+  }
+
+  public static fromErrors(
+    countError: PostgrestError | null,
+    dataError: PostgrestError | null
+  ): CollectionQueryError {
+    const fetchFailedFor =
+      countError && dataError ? 'count and collection' : countError ? 'count' : 'collection'
+    return new CollectionQueryError(`Failed to fetch ${fetchFailedFor}`, {
+      count: countError,
+      data: dataError,
+    })
+  }
+}
+
 export function convertUnknownToApiError(error: unknown): ApiError {
   return new ApiError('Unknown error', error)
 }

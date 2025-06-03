@@ -1,6 +1,13 @@
-import { ApiErrorGeneric, convertPostgrestToApiError, NoDataError } from '~/app/api/utils'
+import { type PostgrestError } from '@supabase/supabase-js'
+import {
+  ApiErrorGeneric,
+  CollectionQueryError,
+  convertPostgrestToApiError,
+  NoDataError,
+} from '~/app/api/utils'
 import { Result } from '~/features/helpers.fn'
 import { supabase } from '~/lib/supabase'
+import { type CollectionFetch } from '../utils/connections'
 
 export const SERVICES = {
   AUTH: {
@@ -15,24 +22,29 @@ export const SERVICES = {
 } as const
 
 type Service = keyof typeof SERVICES
+type ErrorCollectionFetch = CollectionFetch<ErrorModel, never>['fetch']
 
 export class ErrorModel {
+  public id: string
   public code: string
   public service: Service
   public httpStatusCode?: number
   public message?: string
 
   constructor({
+    id,
     code,
     service,
-    httpStatusCode: httpStatusCode,
+    httpStatusCode,
     message,
   }: {
+    id: string
     code: string
     service: Service
     httpStatusCode?: number
     message?: string
   }) {
+    this.id = id
     this.code = code
     this.service = service
     this.httpStatusCode = httpStatusCode
@@ -50,11 +62,12 @@ export class ErrorModel {
       await supabase()
         .schema('content')
         .from('error')
-        .select('code, ...service(service:name), httpStatusCode:http_status_code, message')
+        .select('id, code, ...service(service:name), httpStatusCode:http_status_code, message')
         .eq('code', code)
         .eq('service.name', service)
         .is('deleted_at', null)
         .single<{
+          id: string
           code: string
           service: Service
           httpStatusCode?: number
@@ -71,4 +84,94 @@ export class ErrorModel {
         return convertPostgrestToApiError(error)
       })
   }
+
+  static async loadErrors({
+    first,
+    last,
+    after,
+    before,
+  }: Parameters<ErrorCollectionFetch>[0]): ReturnType<ErrorCollectionFetch> {
+    const PAGE_SIZE = 20
+    const limit = first ?? last ?? PAGE_SIZE
+
+    const [countResult, errorCodesResult] = await Promise.all([
+      fetchTotalErrorCount(),
+      fetchErrorDescriptions({
+        after,
+        before,
+        reverse: !!last,
+        limit: limit + 1,
+      }),
+    ])
+
+    return countResult
+      .join(errorCodesResult)
+      .map(([count, errorCodes]) => {
+        const hasMoreItems = errorCodes.length > limit
+        const items = last ? errorCodes.slice(1) : errorCodes.slice(0, limit)
+
+        return {
+          items: items.map((errorCode) => new ErrorModel(errorCode)),
+          totalCount: count,
+          hasNextPage: last ? !!before : hasMoreItems,
+          hasPreviousPage: last ? hasMoreItems : !!after,
+        }
+      })
+      .mapError(([countError, errorCodeError]) => {
+        return CollectionQueryError.fromErrors(countError, errorCodeError)
+      })
+  }
+}
+
+async function fetchTotalErrorCount(): Promise<Result<number, PostgrestError>> {
+  const { count, error } = await supabase()
+    .schema('content')
+    .from('error')
+    .select('id', { count: 'exact', head: true })
+    .is('deleted_at', null)
+  if (error) {
+    return Result.error(error)
+  }
+  return Result.ok(count)
+}
+
+type ErrorDescription = {
+  id: string
+  code: string
+  service: Service
+  httpStatusCode?: number
+  message?: string
+}
+
+async function fetchErrorDescriptions({
+  after,
+  before,
+  reverse,
+  limit,
+}: {
+  after?: string
+  before?: string
+  reverse: boolean
+  limit: number
+}): Promise<Result<ErrorDescription[], PostgrestError>> {
+  const query = supabase()
+    .schema('content')
+    .from('error')
+    .select('id, code, ...service(service:name), httpStatusCode: http_status_code, message')
+    .is('deleted_at', null)
+    .order('id', { ascending: reverse ? false : true })
+
+  if (after != undefined) {
+    query.gt('id', after)
+  }
+  if (before != undefined) {
+    query.lt('id', before)
+  }
+  query.limit(limit)
+
+  const result = await query
+  return new Result(result).map((results) => {
+    const transformedResults = reverse ? results.toReversed() : results
+    return transformedResults as ErrorDescription[]
+  })
 }
