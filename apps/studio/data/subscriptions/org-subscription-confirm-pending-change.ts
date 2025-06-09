@@ -6,24 +6,25 @@ import type { ResponseError } from 'types'
 
 export type PendingSubscriptionChangeVariables = {
   payment_intent_id: string
-  slug?: string
+  name: string
+  kind?: string
+  size?: string
 }
 
 export async function confirmPendingSubscriptionChange({
   payment_intent_id,
-  slug,
+  name,
+  kind,
+  size,
 }: PendingSubscriptionChangeVariables) {
-  if (!slug) throw new Error('Organization slug is required')
-
-  const { data, error } = await post(
-    '/platform/organizations/{slug}/billing/subscription/confirm-subscription-change',
-    {
-         params: { path: { slug } },
-      body: {
-        payment_intent_id,
-      },
-    }
-  )
+  const { data, error } = await post('/platform/organizations/confirm-subscription-creation', {
+    body: {
+      payment_intent_id,
+      name,
+      kind,
+      size,
+    },
+  })
 
   if (error) handleError(error)
   return data

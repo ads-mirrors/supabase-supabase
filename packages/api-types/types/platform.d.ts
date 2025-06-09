@@ -1007,23 +1007,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/platform/organizations/{slug}/billing/subscription/confirm-subscription-change': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Confirm subscription change and apply pending changes */
-    post: operations['SubscriptionController_confirmSubscriptionChange']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/platform/organizations/{slug}/billing/subscription/preview': {
     parameters: {
       query?: never
@@ -1507,6 +1490,23 @@ export interface paths {
     get: operations['OrgUsageController_getOrgUsage']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/platform/organizations/confirm-subscription-creation': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Confirm subscription change and apply pending changes */
+    post: operations['OrganizationsController_confirmSubscriptionChange']
     delete?: never
     options?: never
     head?: never
@@ -4252,15 +4252,10 @@ export interface components {
       recoveryTimeTarget?: number
     }
     ConfirmSubscriptionChangeBody: {
+      kind?: string
+      name: string
       payment_intent_id: string
-    }
-    ConfirmSubscriptionResponse: {
-      plan: {
-        /** @enum {string} */
-        id: 'free' | 'pro' | 'team' | 'enterprise'
-        name: string
-      }
-      usage_billing_enabled: boolean
+      size?: string
     }
     CopyObjectBody: {
       from: string
@@ -4549,6 +4544,31 @@ export interface components {
       /** @enum {string} */
       tier: 'tier_free' | 'tier_pro' | 'tier_payg' | 'tier_team' | 'tier_enterprise'
     }
+    CreateOrganizationResponse:
+      | {
+          pending_payment_intent_secret: string | null
+        }
+      | {
+          billing_email: string | null
+          id: number
+          is_owner: boolean
+          name: string
+          opt_in_tags: string[]
+          plan: {
+            /** @enum {string} */
+            id: 'free' | 'pro' | 'team' | 'enterprise'
+            name: string
+          }
+          restriction_data: {
+            [key: string]: string
+          } | null
+          /** @enum {string|null} */
+          restriction_status: 'grace_period' | 'grace_period_over' | 'restricted' | null
+          slug: string
+          stripe_customer_id: string | null
+          subscription_id: string | null
+          usage_billing_enabled: boolean
+        }
     CreatePipelineResponse: {
       id: number
     }
@@ -6128,7 +6148,6 @@ export interface components {
       is_owner: boolean
       name: string
       opt_in_tags: string[]
-      pending_payment_intent_secret: string | null
       plan: {
         /** @enum {string} */
         id: 'free' | 'pro' | 'team' | 'enterprise'
@@ -10180,7 +10199,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['OrganizationResponse']
+          'application/json': components['schemas']['CreateOrganizationResponse']
         }
       }
       /** @description Unexpected error creating an organization */
@@ -10678,45 +10697,6 @@ export interface operations {
         content?: never
       }
       /** @description Failed to update subscription change */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-    }
-  }
-  SubscriptionController_confirmSubscriptionChange: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description Organization slug */
-        slug: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConfirmSubscriptionChangeBody']
-      }
-    }
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ConfirmSubscriptionResponse']
-        }
-      }
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Failed to confirm subscription changes */
       500: {
         headers: {
           [name: string]: unknown
@@ -12044,6 +12024,36 @@ export interface operations {
         }
       }
       /** @description Failed to get usage stats */
+      500: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  OrganizationsController_confirmSubscriptionChange: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmSubscriptionChangeBody']
+      }
+    }
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CreateOrganizationResponse']
+        }
+      }
+      /** @description Failed to confirm subscription changes */
       500: {
         headers: {
           [name: string]: unknown

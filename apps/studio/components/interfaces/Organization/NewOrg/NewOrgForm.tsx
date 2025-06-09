@@ -161,18 +161,15 @@ const NewOrgForm = ({ onPaymentMethodReset }: NewOrgFormProps) => {
   const [paymentConfirmationLoading, setPaymentConfirmationLoading] = useState(false)
   const [showSpendCapHelperModal, setShowSpendCapHelperModal] = useState(false)
   const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null)
-  const [slug, setSlug] = useState<string | null>(null)
 
   const { mutate: createOrganization } = useOrganizationCreateMutation({
     onSuccess: async (org) => {
-      setSlug(org.slug)
       await invalidateOrganizationsQuery(queryClient)
 
-      if (org.pending_payment_intent_secret) {
-        console.log('Payment intent secret:', org.pending_payment_intent_secret)
+      if ('pending_payment_intent_secret' in org && org.pending_payment_intent_secret) {
         setPaymentIntentSecret(org.pending_payment_intent_secret)
       } else {
-        onOrganizationCreated(org)
+        onOrganizationCreated(org as { slug: string })
       }
     },
     onError: (data) => {
@@ -182,9 +179,13 @@ const NewOrgForm = ({ onPaymentMethodReset }: NewOrgFormProps) => {
     },
   })
 
-  const { mutate: confirmPendingSubscriptionChange } = useConfirmPendingSubscriptionChangeMutation(
-    {}
-  )
+  const { mutate: confirmPendingSubscriptionChange } = useConfirmPendingSubscriptionChangeMutation({
+    onSuccess: (data) => {
+      if (data && 'slug' in data) {
+        onOrganizationCreated({ slug: data.slug })
+      }
+    },
+  })
 
   const paymentIntentConfirmed = async (paymentIntentConfirmation: PaymentIntentResult) => {
     // Reset payment intent secret to ensure another attempt works as expected
@@ -193,9 +194,10 @@ const NewOrgForm = ({ onPaymentMethodReset }: NewOrgFormProps) => {
     if (paymentIntentConfirmation.paymentIntent?.status === 'succeeded') {
       await confirmPendingSubscriptionChange({
         payment_intent_id: paymentIntentConfirmation.paymentIntent.id,
-        slug: slug!,
+        name: formState.name,
+        kind: formState.kind,
+        size: formState.size,
       })
-      onOrganizationCreated({ slug: slug! })
     }
   }
 
