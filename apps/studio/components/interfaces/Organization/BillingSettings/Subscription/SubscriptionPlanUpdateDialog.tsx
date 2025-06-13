@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, InfoIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import tweets from 'shared-data/tweets'
 import { toast } from 'sonner'
 
@@ -14,13 +14,21 @@ import { ProjectInfo } from 'data/projects/projects-query'
 import { useOrgSubscriptionUpdateMutation } from 'data/subscriptions/org-subscription-update-mutation'
 import { SubscriptionTier } from 'data/subscriptions/types'
 import { useSelectedOrganization } from 'hooks/misc/useSelectedOrganization'
-import { PRICING_TIER_PRODUCT_IDS, PROJECT_STATUS } from 'lib/constants'
+import { PRICING_TIER_PRODUCT_IDS, PROJECT_STATUS, STRIPE_PUBLIC_KEY } from 'lib/constants'
 import { formatCurrency } from 'lib/helpers'
 import { Badge, Button, Dialog, DialogContent, Table, TableBody, TableCell, TableRow } from 'ui'
 import { Admonition } from 'ui-patterns'
 import { InfoTooltip } from 'ui-patterns/info-tooltip'
 import { BillingCustomerDataExistingOrgDialog } from '../BillingCustomerData/BillingCustomerDataExistingOrgDialog'
 import PaymentMethodSelection from './PaymentMethodSelection'
+import { useConfirmPendingSubscriptionChangeMutation } from 'data/subscriptions/org-subscription-confirm-pending-change'
+import { PaymentConfirmation } from 'components/interfaces/Billing/Payment/PaymentConfirmation'
+import { Elements } from '@stripe/react-stripe-js'
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
+import { useTheme } from 'next-themes'
+import { PaymentIntentResult } from '@stripe/stripe-js'
+
+const stripePromise = loadStripe(STRIPE_PUBLIC_KEY)
 
 const getRandomTweet = () => {
   const filteredTweets = tweets.filter((it) => it.text.length < 180)
@@ -79,10 +87,20 @@ export const SubscriptionPlanUpdateDialog = ({
   currentPlanMeta,
   projects,
 }: Props) => {
+  const { resolvedTheme } = useTheme()
   const queryClient = useQueryClient()
   const { slug } = useSelectedOrganization() ?? {}
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>()
   const [testimonialTweet, setTestimonialTweet] = useState(getRandomTweet())
+  const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null)
+  const [paymentConfirmationLoading, setPaymentConfirmationLoading] = useState(false)
+
+  const stripeOptionsConfirm = useMemo(() => {
+    return {
+      clientSecret: paymentIntentSecret,
+      appearance: { theme: resolvedTheme?.includes('dark') ? 'night' : 'flat', labels: 'floating' },
+    } as StripeElementsOptions
+  }, [paymentIntentSecret, resolvedTheme])
 
   useEffect(() => {
     if (selectedTier !== undefined && selectedTier !== 'tier_free') {
@@ -90,20 +108,54 @@ export const SubscriptionPlanUpdateDialog = ({
     }
   }, [selectedTier])
 
+  const onSuccessfulPlanChange = () => {
+    toast.success(
+      `Successfully ${planMeta?.change_type === 'downgrade' ? 'downgraded' : 'upgraded'} subscription to ${subscriptionPlanMeta?.name}!`
+    )
+    onClose()
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  }
+
   const { mutate: updateOrgSubscription, isLoading: isUpdating } = useOrgSubscriptionUpdateMutation(
     {
-      onSuccess: () => {
-        toast.success(
-          `Successfully ${planMeta?.change_type === 'downgrade' ? 'downgraded' : 'upgraded'} subscription to ${subscriptionPlanMeta?.name}!`
-        )
-        onClose()
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      onSuccess: (data) => {
+        if (data.pending_payment_intent_secret) {
+          setPaymentIntentSecret(data.pending_payment_intent_secret)
+          return
+        }
+
+        onSuccessfulPlanChange()
       },
       onError: (error) => {
         toast.error(`Unable to update subscription: ${error.message}`)
       },
     }
   )
+
+  const { mutate: confirmPendingSubscriptionChange } = useConfirmPendingSubscriptionChangeMutation({
+    onSuccess: () => {
+      onSuccessfulPlanChange()
+    },
+    onError: (error) => {
+      toast.error(`Unable to update subscription: ${error.message}`)
+    },
+  })
+
+  const paymentIntentConfirmed = async (paymentIntentConfirmation: PaymentIntentResult) => {
+    // Reset payment intent secret to ensure another attempt works as expected
+    setPaymentIntentSecret('')
+
+    if (paymentIntentConfirmation.paymentIntent?.status === 'succeeded') {
+      await confirmPendingSubscriptionChange({
+        slug,
+        payment_intent_id: paymentIntentConfirmation.paymentIntent.id,
+      })
+    } else {
+      setPaymentConfirmationLoading(false)
+      // If the payment intent is not successful, we reset the payment method and show an error
+      toast.error(`Could not confirm payment. Please try again or use a different card.`)
+    }
+  }
 
   const onUpdateSubscription = async () => {
     if (!slug) return console.error('org slug is required')
@@ -532,7 +584,7 @@ export const SubscriptionPlanUpdateDialog = ({
                   Cancel
                 </Button>
                 <Button
-                  loading={isUpdating}
+                  loading={isUpdating || paymentConfirmationLoading}
                   type="primary"
                   onClick={onUpdateSubscription}
                   className="flex-1"
@@ -604,6 +656,19 @@ export const SubscriptionPlanUpdateDialog = ({
             )}
           </div>
         </div>
+
+        {stripePromise && paymentIntentSecret && (
+          <Elements stripe={stripePromise} options={stripeOptionsConfirm}>
+            <PaymentConfirmation
+              paymentIntentSecret={paymentIntentSecret}
+              onPaymentIntentConfirm={(paymentIntentConfirmation) =>
+                paymentIntentConfirmed(paymentIntentConfirmation)
+              }
+              onLoadingChange={(loading) => setPaymentConfirmationLoading(loading)}
+              paymentMethodId={selectedPaymentMethod!}
+            />
+          </Elements>
+        )}
       </DialogContent>
     </Dialog>
   )

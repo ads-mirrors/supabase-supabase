@@ -35,7 +35,7 @@ import {
 import ConfirmationModal from 'ui-patterns/Dialogs/ConfirmationModal'
 import { BillingCustomerDataNewOrgDialog } from '../BillingSettings/BillingCustomerData/BillingCustomerDataNewOrgDialog'
 import { FormCustomerData } from '../BillingSettings/BillingCustomerData/useBillingCustomerDataForm'
-import { useConfirmPendingSubscriptionChangeMutation } from 'data/subscriptions/org-subscription-confirm-pending-change'
+import { useConfirmPendingSubscriptionCreateMutation } from 'data/subscriptions/org-subscription-confirm-pending-create'
 import { loadStripe } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { SetupIntentResponse } from 'data/stripe/setup-intent-mutation'
@@ -191,7 +191,7 @@ const NewOrgForm = ({ onPaymentMethodReset, setupIntent, onPlanSelected }: NewOr
     },
   })
 
-  const { mutate: confirmPendingSubscriptionChange } = useConfirmPendingSubscriptionChangeMutation({
+  const { mutate: confirmPendingSubscriptionChange } = useConfirmPendingSubscriptionCreateMutation({
     onSuccess: (data) => {
       if (data && 'slug' in data) {
         onOrganizationCreated({ slug: data.slug })

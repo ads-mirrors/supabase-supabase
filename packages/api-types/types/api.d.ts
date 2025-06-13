@@ -2967,7 +2967,11 @@ export interface components {
       allowed_release_channels: ('internal' | 'alpha' | 'beta' | 'ga' | 'withdrawn' | 'preview')[]
       id: string
       name: string
-      opt_in_tags: 'AI_SQL_GENERATOR_OPT_IN'[]
+      opt_in_tags: (
+        | 'AI_SQL_GENERATOR_OPT_IN'
+        | 'AI_DATA_GENERATOR_OPT_IN'
+        | 'AI_LOG_GENERATOR_OPT_IN'
+      )[]
       /** @enum {string} */
       plan?: 'free' | 'pro' | 'team' | 'enterprise'
     }
