@@ -603,7 +603,7 @@ export const SubscriptionPlanUpdateDialog = ({
                   <div className="mb-4">
                     <h3 className="text-sm mb-1">Features you'll lose</h3>
                     <p className="text-xs text-foreground-light mb-4">
-                      Please review this carefully before downgrading.
+                      Please review carefully before downgrading.
                     </p>
                     <div className="space-y-2 mb-4 text-foreground-light">
                       {featuresToLose.map((feature: string | [string, ...any[]]) => (
