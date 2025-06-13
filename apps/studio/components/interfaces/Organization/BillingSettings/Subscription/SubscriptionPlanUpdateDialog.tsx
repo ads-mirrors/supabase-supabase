@@ -236,9 +236,9 @@ export const SubscriptionPlanUpdateDialog = ({
         size="xlarge"
         className="p-0"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 h-full items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 h-full items-stretch">
           {/* Left Column */}
-          <div className="p-8 pb-8 flex flex-col">
+          <div className="p-8 pb-8 flex flex-col xl:col-span-3">
             <div className="flex-1">
               <h3 className="text-base mb-4">
                 {planMeta?.change_type === 'downgrade' ? 'Downgrade' : 'Upgrade'}{' '}
@@ -597,7 +597,7 @@ export const SubscriptionPlanUpdateDialog = ({
           </div>
 
           {/* Right Column */}
-          <div className="bg-surface-100 p-8 flex flex-col border-l">
+          <div className="bg-surface-100 p-8 flex flex-col border-l xl:col-span-2">
             {planMeta?.change_type === 'downgrade'
               ? featuresToLose.length > 0 && (
                   <div className="mb-4">
