@@ -536,15 +536,18 @@ export const SubscriptionPlanUpdateDialog = ({
             </div>
 
             <div className="pt-6">
-              {!billingViaPartner ? (
+              {!billingViaPartner && subscriptionPreview?.plan_change_type !== 'downgrade' && (
                 <div className="space-y-2 mb-4">
                   <BillingCustomerDataExistingOrgDialog />
+
                   <PaymentMethodSelection
                     selectedPaymentMethod={selectedPaymentMethod}
                     onSelectPaymentMethod={setSelectedPaymentMethod}
                   />
                 </div>
-              ) : (
+              )}
+
+              {billingViaPartner && (
                 <div className="mb-4">
                   <p className="text-sm">
                     This organization is billed through our partner{' '}
@@ -570,14 +573,15 @@ export const SubscriptionPlanUpdateDialog = ({
                 (it) =>
                   it.status === PROJECT_STATUS.ACTIVE_HEALTHY ||
                   it.status === PROJECT_STATUS.COMING_UP
-              ).length === 0 && (
-                <div className="pb-2">
-                  <Admonition title="Empty organization" type="warning">
-                    This organization has no active projects. Did you select the correct
-                    organization?
-                  </Admonition>
-                </div>
-              )}
+              ).length === 0 &&
+                subscriptionPreview?.plan_change_type !== 'downgrade' && (
+                  <div className="pb-2">
+                    <Admonition title="Empty organization" type="warning">
+                      This organization has no active projects. Did you select the correct
+                      organization?
+                    </Admonition>
+                  </div>
+                )}
 
               <div className="flex space-x-2">
                 <Button type="default" size="medium" onClick={onClose} className="flex-1">
