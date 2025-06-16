@@ -556,6 +556,7 @@ const NewOrgForm = ({ onPaymentMethodReset, setupIntent, onPlanSelected }: NewOr
                 pending_subscription_flow_enabled_for_creation={
                   setupIntent?.pending_subscription_flow_enabled_for_creation === true
                 }
+                email={user.profile?.primary_email}
               />
             </Elements>
           </Panel.Content>
@@ -666,7 +667,8 @@ const Payment = forwardRef(
   (
     {
       pending_subscription_flow_enabled_for_creation,
-    }: { pending_subscription_flow_enabled_for_creation: boolean },
+      email,
+    }: { pending_subscription_flow_enabled_for_creation: boolean; email?: string },
     ref
   ) => {
     const stripe = useStripe()
@@ -711,7 +713,11 @@ const Payment = forwardRef(
 
     return (
       <Panel.Content>
-        <PaymentElement />
+        <PaymentElement
+          options={{
+            defaultValues: { billingDetails: { email } },
+          }}
+        />
       </Panel.Content>
     )
   }
