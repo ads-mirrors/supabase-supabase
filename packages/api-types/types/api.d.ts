@@ -3240,6 +3240,10 @@ export interface components {
       max_client_conn?: number
       /** @enum {string} */
       pool_mode?: 'transaction' | 'session' | 'statement'
+      query_wait_timeout?: number
+      reserve_pool_size?: number
+      server_idle_timeout?: number
+      server_lifetime?: number
     }
     V1PostgrestConfigResponse: {
       db_extra_search_path: string
