@@ -3,8 +3,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useBillingCustomerDataForm } from 'components/interfaces/Organization/BillingSettings/BillingCustomerData/useBillingCustomerDataForm'
 import { organizationKeys } from 'data/organizations/keys'
 import { useOrganizationCustomerProfileQuery } from 'data/organizations/organization-customer-profile-query'
+import { useOrganizationCustomerProfileUpdateMutation } from 'data/organizations/organization-customer-profile-update-mutation'
 import { useOrganizationPaymentMethodMarkAsDefaultMutation } from 'data/organizations/organization-payment-method-default-mutation'
 import { useSelectedOrganization } from 'hooks/misc/useSelectedOrganization'
+import { isEqual } from 'lodash'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button, Checkbox_Shadcn_, Label_Shadcn_, LoadingLine, Modal } from 'ui'
@@ -44,6 +46,7 @@ const AddPaymentMethodForm = ({
 
   const queryClient = useQueryClient()
   const { mutateAsync: markAsDefault } = useOrganizationPaymentMethodMarkAsDefaultMutation()
+  const { mutateAsync: updateCustomerProfile } = useOrganizationCustomerProfileUpdateMutation()
 
   const handleSubmit = async (event: any) => {
     event.preventDefault()
@@ -101,6 +104,27 @@ const AddPaymentMethodForm = ({
           )
         } catch (error) {
           toast.error('Failed to set payment method as default')
+        }
+
+        try {
+          if (isPrimaryBillingAddress) {
+            const addressValue = await elements
+              .getElement('address')
+              ?.getValue()
+              .then((it) => it.value)
+
+            if (addressValue && !isEqual(addressValue.address, customerProfile?.address)) {
+              await updateCustomerProfile({
+                billing_name: addressValue.name,
+                address: {
+                  ...addressValue.address,
+                  line2: addressValue.address.line2 ?? undefined,
+                },
+              })
+            }
+          }
+        } catch (error) {
+          toast.error('Failed to update billing address')
         }
       } else {
         if (selectedOrganization) {

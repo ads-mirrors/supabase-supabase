@@ -296,12 +296,8 @@ const NewOrgForm = ({ onPaymentMethodReset, setupIntent, onPlanSelected }: NewOr
         setPaymentMethod(result.paymentMethod)
         const customerData = {
           address: {
-            country: result.address.address.country,
-            line1: result.address.address.line1,
-            city: result.address.address.city,
+            ...result.address.address,
             line2: result.address.address.line2 ? result.address.address.line2 : undefined,
-            postal_code: result.address.address.postal_code,
-            state: result.address.address.state,
           },
           billing_name: result.address.name!,
           tax_id: result.taxId,
