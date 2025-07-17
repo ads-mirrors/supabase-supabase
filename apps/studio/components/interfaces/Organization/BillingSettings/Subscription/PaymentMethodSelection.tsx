@@ -23,7 +23,12 @@ import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useIsHCaptchaLoaded } from 'stores/hcaptcha-loaded-store'
 import { useOrganizationPaymentMethodSetupIntent } from 'data/organizations/organization-payment-method-setup-intent-mutation'
 import { SetupIntentResponse } from 'data/stripe/setup-intent-mutation'
-import { loadStripe, PaymentMethod, StripeElementsOptions } from '@stripe/stripe-js'
+import {
+  loadStripe,
+  PaymentMethod,
+  StripeAddressElementChangeEvent,
+  StripeElementsOptions,
+} from '@stripe/stripe-js'
 import { getStripeElementsAppearanceOptions } from 'components/interfaces/Billing/Payment/Payment.utils'
 import { useTheme } from 'next-themes'
 import { Elements } from '@stripe/react-stripe-js'
@@ -58,7 +63,20 @@ const PaymentMethodSelection = forwardRef(function PaymentMethodSelection(
   const [captchaRef, setCaptchaRef] = useState<HCaptcha | null>(null)
   const [setupIntent, setSetupIntent] = useState<SetupIntentResponse | undefined>(undefined)
   const { resolvedTheme } = useTheme()
-  const paymentRef = useRef<{ createPaymentMethod: () => Promise<PaymentMethod | undefined> }>(null)
+  const paymentRef = useRef<{
+    createPaymentMethod: () => Promise<
+      | {
+          paymentMethod: PaymentMethod
+          address: StripeAddressElementChangeEvent['value']
+          taxId: {
+            country: string
+            type: string
+            value: string
+          } | null
+        }
+      | undefined
+    >
+  }>(null)
   const [setupNewPaymentMethod, setSetupNewPaymentMethod] = useState<boolean | null>(null)
 
   const {

@@ -24,11 +24,17 @@ import PaymentMethodSelection from './PaymentMethodSelection'
 import { useConfirmPendingSubscriptionChangeMutation } from 'data/subscriptions/org-subscription-confirm-pending-change'
 import { PaymentConfirmation } from 'components/interfaces/Billing/Payment/PaymentConfirmation'
 import { Elements } from '@stripe/react-stripe-js'
-import { loadStripe, PaymentMethod, StripeElementsOptions } from '@stripe/stripe-js'
+import {
+  loadStripe,
+  PaymentMethod,
+  StripeAddressElement,
+  StripeElementsOptions,
+} from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { PaymentIntentResult } from '@stripe/stripe-js'
 import { getStripeElementsAppearanceOptions } from 'components/interfaces/Billing/Payment/Payment.utils'
 import { plans as subscriptionsPlans } from 'shared-data/plans'
+import { StripeAddressElementChangeEvent } from '@stripe/stripe-js'
 
 const stripePromise = loadStripe(STRIPE_PUBLIC_KEY)
 
@@ -81,7 +87,18 @@ export const SubscriptionPlanUpdateDialog = ({
   const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null)
   const [paymentConfirmationLoading, setPaymentConfirmationLoading] = useState(false)
   const paymentMethodSelection = useRef<{
-    createPaymentMethod: () => Promise<PaymentMethod | undefined>
+    createPaymentMethod: () => Promise<
+      | {
+          paymentMethod: PaymentMethod
+          address: StripeAddressElementChangeEvent['value']
+          taxId: {
+            country: string
+            type: string
+            value: string
+          } | null
+        }
+      | undefined
+    >
   }>(null)
 
   const billingViaPartner = subscription?.billing_via_partner === true
@@ -161,18 +178,14 @@ export const SubscriptionPlanUpdateDialog = ({
 
     setPaymentConfirmationLoading(true)
 
-    const paymentMethod = await paymentMethodSelection.current?.createPaymentMethod()
-    if (paymentMethod) {
-      setSelectedPaymentMethod(paymentMethod.id)
+    const result = await paymentMethodSelection.current?.createPaymentMethod()
+    if (result) {
+      setSelectedPaymentMethod(result.paymentMethod.id)
     } else {
       setPaymentConfirmationLoading(false)
     }
 
-    if (
-      !paymentMethod &&
-      subscription?.payment_method_type !== 'invoice' &&
-      changeType === 'upgrade'
-    ) {
+    if (!result && subscription?.payment_method_type !== 'invoice' && changeType === 'upgrade') {
       return
     }
 
@@ -185,7 +198,7 @@ export const SubscriptionPlanUpdateDialog = ({
     updateOrgSubscription({
       slug: selectedOrganization?.slug,
       tier,
-      paymentMethod: paymentMethod?.id,
+      paymentMethod: result?.paymentMethod?.id,
     })
   }
 

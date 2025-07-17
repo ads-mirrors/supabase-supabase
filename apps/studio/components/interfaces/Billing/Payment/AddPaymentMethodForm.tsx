@@ -1,11 +1,14 @@
-import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
+import { AddressElement, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useQueryClient } from '@tanstack/react-query'
+import { useBillingCustomerDataForm } from 'components/interfaces/Organization/BillingSettings/BillingCustomerData/useBillingCustomerDataForm'
 import { organizationKeys } from 'data/organizations/keys'
+import { useOrganizationCustomerProfileQuery } from 'data/organizations/organization-customer-profile-query'
 import { useOrganizationPaymentMethodMarkAsDefaultMutation } from 'data/organizations/organization-payment-method-default-mutation'
 import { useSelectedOrganization } from 'hooks/misc/useSelectedOrganization'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Button, Checkbox_Shadcn_, Label_Shadcn_, Modal } from 'ui'
+import { Button, Checkbox_Shadcn_, Label_Shadcn_, LoadingLine, Modal } from 'ui'
+import ShimmeringLoader from 'ui-patterns/ShimmeringLoader'
 
 interface AddPaymentMethodFormProps {
   returnUrl: string
@@ -30,8 +33,14 @@ const AddPaymentMethodForm = ({
   const elements = useElements()
   const selectedOrganization = useSelectedOrganization()
 
+  const { data: customerProfile, isLoading: customerProfileLoading } =
+    useOrganizationCustomerProfileQuery({
+      slug: selectedOrganization?.slug,
+    })
+
   const [isSaving, setIsSaving] = useState(false)
   const [isDefault, setIsDefault] = useState(showSetDefaultCheckbox)
+  const [isPrimaryBillingAddress, setIsPrimaryBillingAddress] = useState(true)
 
   const queryClient = useQueryClient()
   const { mutateAsync: markAsDefault } = useOrganizationPaymentMethodMarkAsDefaultMutation()
@@ -110,32 +119,79 @@ const AddPaymentMethodForm = ({
     }
   }
 
+  if (customerProfileLoading) {
+    return (
+      <Modal.Content>
+        <div className="space-y-2">
+          <ShimmeringLoader />
+          <ShimmeringLoader className="w-3/4" />
+          <ShimmeringLoader className="w-1/2" />
+          <ShimmeringLoader />
+          <ShimmeringLoader />
+          <ShimmeringLoader />
+        </div>
+      </Modal.Content>
+    )
+  }
+
   return (
     <div>
       <Modal.Content
         className={`transition ${isSaving ? 'pointer-events-none opacity-75' : 'opacity-100'}`}
       >
         <PaymentElement
-          className="[.p-LinkAutofillPrompt]:pt-0"
           options={{
-            defaultValues: { billingDetails: { email: selectedOrganization?.billing_email ?? '' } },
+            defaultValues: {
+              billingDetails: {
+                email: selectedOrganization?.billing_email ?? '',
+              },
+            },
           }}
         />
+
+        <AddressElement
+          className="mt-1"
+          options={{
+            mode: 'billing',
+            defaultValues: {
+              address: customerProfile?.address,
+              name: customerProfile?.billing_name,
+            },
+          }}
+        />
+
         {showSetDefaultCheckbox && (
-          <div className="flex items-center gap-x-2 mt-4 mb-2">
-            <Checkbox_Shadcn_
-              id="save-as-default"
-              checked={isDefault}
-              onCheckedChange={(checked) => {
-                if (typeof checked === 'boolean') {
-                  setIsDefault(checked)
-                }
-              }}
-            />
-            <Label_Shadcn_ htmlFor="save-as-default" className="text-foreground-light">
-              Save as default payment method
-            </Label_Shadcn_>
-          </div>
+          <>
+            <div className="flex items-center gap-x-2 mt-4 mb-2">
+              <Checkbox_Shadcn_
+                id="save-as-default"
+                checked={isDefault}
+                onCheckedChange={(checked) => {
+                  if (typeof checked === 'boolean') {
+                    setIsDefault(checked)
+                  }
+                }}
+              />
+              <Label_Shadcn_ htmlFor="save-as-default" className="text-foreground-light">
+                Save as default payment method
+              </Label_Shadcn_>
+            </div>
+
+            <div className="flex items-center gap-x-2 mt-4 mb-2">
+              <Checkbox_Shadcn_
+                id="save-as-default"
+                checked={isPrimaryBillingAddress}
+                onCheckedChange={(checked) => {
+                  if (typeof checked === 'boolean') {
+                    setIsPrimaryBillingAddress(checked)
+                  }
+                }}
+              />
+              <Label_Shadcn_ htmlFor="save-as-default" className="text-foreground-light">
+                Use the billing address as my organization's primary address
+              </Label_Shadcn_>
+            </div>
+          </>
         )}
       </Modal.Content>
       <Modal.Separator />
