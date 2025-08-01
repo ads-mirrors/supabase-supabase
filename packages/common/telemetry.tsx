@@ -174,6 +174,8 @@ export const PageTelemetry = ({
   const sendPageLeaveTelemetry = useCallback(() => {
     if (!(enabled && hasAcceptedConsent)) return Promise.resolve()
 
+    if (!pathnameRef.current) return Promise.resolve()
+
     return handlePageLeaveTelemetry(
       API_URL,
       pathnameRef.current,
