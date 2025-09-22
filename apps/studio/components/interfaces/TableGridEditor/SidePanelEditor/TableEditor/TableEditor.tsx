@@ -303,7 +303,8 @@ export const TableEditor = ({
       <SidePanel.Content className="space-y-10 py-6">
         {isNewRecord &&
           !isDuplicating &&
-          tableQuickstartVariant === QuickstartVariant.TEMPLATES &&
+          (tableQuickstartVariant === QuickstartVariant.TEMPLATES ||
+            tableQuickstartVariant === QuickstartVariant.AI) &&
           !hasTables &&
           !quickstartDismissed && (
             <TableTemplateSelector
