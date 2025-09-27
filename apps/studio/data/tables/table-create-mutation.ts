@@ -6,6 +6,8 @@ import type { components } from 'data/api'
 import { executeSql } from 'data/sql/execute-sql-query'
 import type { ResponseError } from 'types'
 import { tableKeys } from './keys'
+import { useSendEventMutation } from 'data/telemetry/send-event-mutation'
+import { useSelectedOrganizationQuery } from 'hooks/misc/useSelectedOrganization'
 
 export type CreateTableBody = components['schemas']['CreateTableBody']
 
@@ -40,12 +42,32 @@ export const useTableCreateMutation = ({
   'mutationFn'
 > = {}) => {
   const queryClient = useQueryClient()
+  const { mutate: sendEvent } = useSendEventMutation()
+  const { data: org } = useSelectedOrganizationQuery()
 
   return useMutation<TableCreateData, ResponseError, TableCreateVariables>(
     (vars) => createTable(vars),
     {
       async onSuccess(data, variables, context) {
         const { projectRef, payload } = variables
+
+        // Track table creation event
+        try {
+          sendEvent({
+            action: 'table_created',
+            properties: {
+              method: 'table_editor',
+              schema_name: payload.schema,
+              table_name: payload.name,
+            },
+            groups: {
+              project: projectRef,
+              ...(org?.slug && { organization: org.slug }),
+            },
+          })
+        } catch (error) {
+          console.error('Failed to track table creation event:', error)
+        }
 
         await Promise.all([
           queryClient.invalidateQueries(tableKeys.list(projectRef, payload.schema, true)),

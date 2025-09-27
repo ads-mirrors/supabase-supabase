@@ -2,6 +2,9 @@ import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react
 import { toast } from 'sonner'
 
 import { executeSql, ExecuteSqlData, ExecuteSqlVariables } from './execute-sql-query'
+import { useSendEventMutation } from 'data/telemetry/send-event-mutation'
+import { useSelectedOrganizationQuery } from 'hooks/misc/useSelectedOrganization'
+import { getTableEvents } from 'lib/sql-event-parser'
 
 // [Joshen] Intention is that we invalidate all database related keys whenever running a mutation related query
 // So we attempt to ignore all the non-related query keys. We could probably look into grouping our query keys better
@@ -31,11 +34,38 @@ export const useExecuteSqlMutation = ({
   'mutationFn'
 > = {}) => {
   const queryClient = useQueryClient()
+  const { mutate: sendEvent } = useSendEventMutation()
+  const { data: org } = useSelectedOrganizationQuery()
+
   return useMutation<ExecuteSqlData, QueryResponseError, ExecuteSqlVariables>(
     (args) => executeSql(args),
     {
       async onSuccess(data, variables, context) {
         const { contextualInvalidation, sql, projectRef } = variables
+
+        // Track table-related events from SQL execution
+        try {
+          const tableEvents = getTableEvents(sql)
+          tableEvents.forEach(event => {
+            if (projectRef) {
+              sendEvent({
+                action: event.type,
+                properties: {
+                  method: 'sql_editor',
+                  schema_name: event.schema,
+                  table_name: event.tableName,
+                },
+                groups: {
+                  project: projectRef,
+                  ...(org?.slug && { organization: org.slug }),
+                },
+              })
+            }
+          })
+        } catch (error) {
+          // Log but don't fail the SQL execution
+          console.error('Failed to parse SQL for telemetry:', error)
+        }
 
         // [Joshen] Default to false for now, only used for SQL editor to dynamically invalidate
         const sqlLower = sql.toLowerCase()
