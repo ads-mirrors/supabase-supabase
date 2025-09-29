@@ -25,18 +25,20 @@ export interface TableEventDetails {
  */
 export class SQLEventParser {
   /**
-   * Extracts schema and object name from regex groups, handling quoted identifiers
+   * Extracts and cleans schema and name from regex match groups
    */
-  private extractIdentifiers(groups: { schema?: string; object?: string; table?: string }) {
+  private extractIdentifiers(groups: { schema?: string; table?: string; object?: string }) {
     const cleanIdentifier = (identifier?: string) => {
       if (!identifier) return undefined
-      // Remove quotes and trailing dots from SQL identifiers
-      return identifier.replace(/["`]/g, '').replace(/\.$/, '')
+      // Remove quotes (including backticks) and trailing dots from SQL identifiers
+      return identifier.replace(/["`'`]/g, '').replace(/\.$/, '')
     }
+
+    const name = groups.table || groups.object
 
     return {
       schema: cleanIdentifier(groups.schema),
-      objectName: cleanIdentifier(groups.object || groups.table),
+      name: cleanIdentifier(name),
     }
   }
 
@@ -49,12 +51,12 @@ export class SQLEventParser {
    * // Returns: { type: 'table_created', schema: undefined, tableName: 'users' }
    */
   detectCreateTable(sql: string): TableEventDetails | null {
-    const pattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>[\w"`]+\.)?(?<table>[\w"`]+)/i
+    const pattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { schema, objectName: tableName } = this.extractIdentifiers(match.groups)
-      return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName }
+      const { schema, name } = this.extractIdentifiers(match.groups)
+      return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
     }
 
     return null
@@ -69,12 +71,12 @@ export class SQLEventParser {
    * // Returns: { type: 'table_data_inserted', schema: undefined, tableName: 'users' }
    */
   detectInsert(sql: string): TableEventDetails | null {
-    const pattern = /INSERT\s+INTO\s+(?<schema>[\w"`]+\.)?(?<table>[\w"`]+)/i
+    const pattern = /INSERT\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { schema, objectName: tableName } = this.extractIdentifiers(match.groups)
-      return { type: TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED, schema, tableName }
+      const { schema, name } = this.extractIdentifiers(match.groups)
+      return { type: TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED, schema, tableName: name }
     }
 
     return null
@@ -89,12 +91,12 @@ export class SQLEventParser {
    * // Returns: { type: 'table_data_inserted', schema: undefined, tableName: 'users' }
    */
   detectCopy(sql: string): TableEventDetails | null {
-    const pattern = /COPY\s+(?<schema>[\w"`]+\.)?(?<table>[\w"`]+)\s+FROM/i
+    const pattern = /COPY\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+FROM/i
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { schema, objectName: tableName } = this.extractIdentifiers(match.groups)
-      return { type: TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED, schema, tableName }
+      const { schema, name } = this.extractIdentifiers(match.groups)
+      return { type: TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED, schema, tableName: name }
     }
 
     return null
@@ -111,16 +113,16 @@ export class SQLEventParser {
   detectSelectInto(sql: string): TableEventDetails | null {
     const patterns = [
       // SELECT ... INTO new_table
-      /SELECT\s+.*?\s+INTO\s+(?<schema>[\w"`]+\.)?(?<table>[\w"`]+)/is,
+      /SELECT\s+.*?\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/is,
       // CREATE TABLE ... AS SELECT
-      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>[\w"`]+\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i
+      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i
     ]
 
     for (const pattern of patterns) {
       const match = sql.match(pattern)
       if (match?.groups) {
-        const { schema, objectName: tableName } = this.extractIdentifiers(match.groups)
-        return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName }
+        const { schema, name } = this.extractIdentifiers(match.groups)
+        return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
       }
     }
 
@@ -139,16 +141,16 @@ export class SQLEventParser {
     // Match various RLS enable patterns
     const patterns = [
       // ALTER TABLE ... ENABLE ROW LEVEL SECURITY
-      /ALTER\s+TABLE\s+(?<schema>[\w"`]+\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i,
+      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i,
       // ALTER TABLE ... ENABLE RLS (shorter form)
-      /ALTER\s+TABLE\s+(?<schema>[\w"`]+\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i,
+      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i,
     ]
 
     for (const pattern of patterns) {
       const match = sql.match(pattern)
       if (match?.groups) {
-        const { schema, objectName: tableName } = this.extractIdentifiers(match.groups)
-        return { type: TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED, schema, tableName }
+        const { schema, name } = this.extractIdentifiers(match.groups)
+        return { type: TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED, schema, tableName: name }
       }
     }
 
@@ -159,12 +161,12 @@ export class SQLEventParser {
    * Detects CREATE FUNCTION statements
    */
   detectCreateFunction(sql: string): SQLEventDetails | null {
-    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?<schema>[\w"`]+\.)?(?<object>[\w"`]+)/i
+    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { schema, objectName } = this.extractIdentifiers(match.groups)
-      return { type: 'create_function', schema, objectName }
+      const { schema, name } = this.extractIdentifiers(match.groups)
+      return { type: 'create_function', schema, objectName: name }
     }
 
     return null
@@ -178,8 +180,8 @@ export class SQLEventParser {
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { objectName } = this.extractIdentifiers(match.groups)
-      return { type: 'create_trigger', objectName }
+      const { name } = this.extractIdentifiers(match.groups)
+      return { type: 'create_trigger', objectName: name }
     }
 
     return null
@@ -189,12 +191,12 @@ export class SQLEventParser {
    * Detects CREATE VIEW statements
    */
   detectCreateView(sql: string): SQLEventDetails | null {
-    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?<schema>[\w"`]+\.)?(?<object>[\w"`]+)/i
+    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
     const match = sql.match(pattern)
 
     if (match?.groups) {
-      const { schema, objectName } = this.extractIdentifiers(match.groups)
-      return { type: 'create_view', schema, objectName }
+      const { schema, name } = this.extractIdentifiers(match.groups)
+      return { type: 'create_view', schema, objectName: name }
     }
 
     return null

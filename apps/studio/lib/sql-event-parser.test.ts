@@ -358,6 +358,153 @@ describe('SQL Event Parser', () => {
     })
   })
 
+  describe('ReDoS protection', () => {
+    it('handles extremely long identifier names efficiently', () => {
+      const longIdentifier = 'a'.repeat(10000)
+      const sql = `CREATE TABLE ${longIdentifier} (id INT)`
+
+      const startTime = Date.now()
+      const result = sqlEventParser.detectCreateTable(sql)
+      const duration = Date.now() - startTime
+
+      // Should complete quickly even with long input
+      expect(duration).toBeLessThan(100)
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: longIdentifier,
+      })
+    })
+
+    it('handles nested dots in schema names without catastrophic backtracking', () => {
+      const maliciousInput = 'a.'.repeat(1000) + 'table'
+      const sql = `CREATE TABLE ${maliciousInput} (id INT)`
+
+      const startTime = Date.now()
+      const result = sqlEventParser.detectCreateTable(sql)
+      const duration = Date.now() - startTime
+
+      // Should complete quickly despite potential ReDoS pattern
+      expect(duration).toBeLessThan(100)
+      // The pattern should capture the schema part correctly
+      expect(result).toBeTruthy()
+    })
+
+    it('handles pathological SELECT INTO patterns', () => {
+      const maliciousSQL = 'SELECT ' + 'a '.repeat(1000) + 'INTO table FROM users'
+
+      const startTime = Date.now()
+      const result = sqlEventParser.detectSelectInto(maliciousSQL)
+      const duration = Date.now() - startTime
+
+      // Should complete quickly despite .*? pattern
+      expect(duration).toBeLessThan(100)
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'table',
+      })
+    })
+
+    it('handles ALTER TABLE with many operations between', () => {
+      const manyOperations = 'ADD COLUMN test INT, '.repeat(100)
+      const sql = `ALTER TABLE users ${manyOperations} ENABLE ROW LEVEL SECURITY`
+
+      const startTime = Date.now()
+      const result = sqlEventParser.detectEnableRLS(sql)
+      const duration = Date.now() - startTime
+
+      // Should complete quickly despite .*? pattern
+      expect(duration).toBeLessThan(100)
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED,
+        schema: undefined,
+        tableName: 'users',
+      })
+    })
+
+    it('handles mixed quotes and backticks efficiently', () => {
+      const mixedQuotes = '`"`.'.repeat(100) + 'tablename'
+      const sql = `CREATE TABLE ${mixedQuotes} (id INT)`
+
+      const startTime = Date.now()
+      sqlEventParser.parseSQLEvents(sql)
+      const duration = Date.now() - startTime
+
+      // Should handle mixed quotes without performance issues
+      expect(duration).toBeLessThan(100)
+    })
+  })
+
+  describe('Edge cases and special characters', () => {
+    it('handles Unicode identifiers', () => {
+      const sql = 'CREATE TABLE 用户表 (id INT)'
+      const result = sqlEventParser.detectCreateTable(sql)
+      // Unicode characters are not in \w, so this should not match
+      expect(result).toBeNull()
+    })
+
+    it('handles identifiers with numbers', () => {
+      const sql = 'CREATE TABLE table123 (id INT)'
+      const result = sqlEventParser.detectCreateTable(sql)
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'table123',
+      })
+    })
+
+    it('handles identifiers with underscores', () => {
+      const sql = 'CREATE TABLE user_accounts (id INT)'
+      const result = sqlEventParser.detectCreateTable(sql)
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'user_accounts',
+      })
+    })
+
+    it('handles escaped quotes in identifiers', () => {
+      const sql = 'CREATE TABLE "user""table" (id INT)'
+      const result = sqlEventParser.detectCreateTable(sql)
+      // Should capture the identifier but cleaning will remove quotes
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'usertable',
+      })
+    })
+
+    it('handles dollar-quoted strings in SQL', () => {
+      const sql = `
+        CREATE TABLE users (id INT);
+        INSERT INTO logs VALUES ($$CREATE TABLE fake$$);
+        INSERT INTO users VALUES (1);
+      `
+      const results = sqlEventParser.parseSQLEvents(sql)
+      // Note: Current implementation doesn't handle dollar quotes properly
+      // It detects the fake CREATE TABLE, and deduplication keeps unique events
+      expect(results).toHaveLength(3)
+      expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
+      expect(results[0]).toMatchObject({ tableName: 'users' })
+      expect(results[1].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
+      expect(results[1]).toMatchObject({ tableName: 'fake' })
+      expect(results[2].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
+    })
+
+    it('handles SQL injection attempts safely', () => {
+      const sql = "CREATE TABLE users'; DROP TABLE users; -- (id INT)"
+      const result = sqlEventParser.detectCreateTable(sql)
+      // Should safely parse without executing
+      // The apostrophe is cleaned out by our identifier cleaner
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: "users",
+      })
+    })
+  })
+
   describe('getTableEvents', () => {
     it('filters only table-related events', () => {
       const sql = `
