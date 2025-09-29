@@ -14,11 +14,14 @@ type TelemetryGroups = {
   organization: string
 }
 
-// Table event action names that we track for telemetry
+// Database object event actions that we track for telemetry
 export const TABLE_EVENT_ACTIONS = {
   TABLE_CREATED: 'table_created',
   TABLE_DATA_INSERTED: 'table_data_inserted',
-  TABLE_RLS_ENABLED: 'table_rls_enabled'
+  TABLE_RLS_ENABLED: 'table_rls_enabled',
+  FUNCTION_CREATED: 'function_created',
+  TRIGGER_CREATED: 'trigger_created',
+  VIEW_CREATED: 'view_created'
 } as const
 
 export type TableEventAction = typeof TABLE_EVENT_ACTIONS[keyof typeof TABLE_EVENT_ACTIONS]

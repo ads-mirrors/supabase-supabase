@@ -6,10 +6,8 @@
  */
 import { TABLE_EVENT_ACTIONS, type TableEventAction } from 'common/telemetry-constants'
 
-export type OtherEventType = 'create_function' | 'create_trigger' | 'create_view'
-
 export interface SQLEventDetails {
-  type: TableEventAction | OtherEventType
+  type: TableEventAction
   schema?: string
   objectName?: string // Name of the database object (table/function/view/etc)
 }
@@ -51,12 +49,18 @@ export class SQLEventParser {
    * // Returns: { type: 'table_created', schema: undefined, tableName: 'users' }
    */
   detectCreateTable(sql: string): TableEventDetails | null {
-    const pattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
-    const match = sql.match(pattern)
+    const standardCreateTable = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
+    const temporaryTable = /CREATE\s+TEMP(?:ORARY)?\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
+    const unloggedTable = /CREATE\s+UNLOGGED\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
 
-    if (match?.groups) {
-      const { schema, name } = this.extractIdentifiers(match.groups)
-      return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
+    const patterns = [standardCreateTable, temporaryTable, unloggedTable]
+
+    for (const pattern of patterns) {
+      const match = sql.match(pattern)
+      if (match?.groups) {
+        const { schema, name } = this.extractIdentifiers(match.groups)
+        return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
+      }
     }
 
     return null
@@ -71,8 +75,8 @@ export class SQLEventParser {
    * // Returns: { type: 'table_data_inserted', schema: undefined, tableName: 'users' }
    */
   detectInsert(sql: string): TableEventDetails | null {
-    const pattern = /INSERT\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
-    const match = sql.match(pattern)
+    const insertIntoPattern = /INSERT\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
+    const match = sql.match(insertIntoPattern)
 
     if (match?.groups) {
       const { schema, name } = this.extractIdentifiers(match.groups)
@@ -91,8 +95,8 @@ export class SQLEventParser {
    * // Returns: { type: 'table_data_inserted', schema: undefined, tableName: 'users' }
    */
   detectCopy(sql: string): TableEventDetails | null {
-    const pattern = /COPY\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+FROM/i
-    const match = sql.match(pattern)
+    const copyFromPattern = /COPY\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+FROM/i
+    const match = sql.match(copyFromPattern)
 
     if (match?.groups) {
       const { schema, name } = this.extractIdentifiers(match.groups)
@@ -111,12 +115,10 @@ export class SQLEventParser {
    * // Returns: { type: 'table_created', schema: undefined, tableName: 'new_users' }
    */
   detectSelectInto(sql: string): TableEventDetails | null {
-    const patterns = [
-      // SELECT ... INTO new_table
-      /SELECT\s+.*?\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/is,
-      // CREATE TABLE ... AS SELECT
-      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i
-    ]
+    const selectIntoPattern = /SELECT\s+.*?\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/is
+    const createTableAsSelectPattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i
+
+    const patterns = [selectIntoPattern, createTableAsSelectPattern]
 
     for (const pattern of patterns) {
       const match = sql.match(pattern)
@@ -138,13 +140,10 @@ export class SQLEventParser {
    * // Returns: { type: 'table_rls_enabled', schema: undefined, tableName: 'users' }
    */
   detectEnableRLS(sql: string): TableEventDetails | null {
-    // Match various RLS enable patterns
-    const patterns = [
-      // ALTER TABLE ... ENABLE ROW LEVEL SECURITY
-      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i,
-      // ALTER TABLE ... ENABLE RLS (shorter form)
-      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i,
-    ]
+    const enableRLSLongPattern = /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i
+    const enableRLSShortPattern = /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i
+
+    const patterns = [enableRLSLongPattern, enableRLSShortPattern]
 
     for (const pattern of patterns) {
       const match = sql.match(pattern)
@@ -161,12 +160,12 @@ export class SQLEventParser {
    * Detects CREATE FUNCTION statements
    */
   detectCreateFunction(sql: string): SQLEventDetails | null {
-    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
-    const match = sql.match(pattern)
+    const createFunctionPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
+    const match = sql.match(createFunctionPattern)
 
     if (match?.groups) {
       const { schema, name } = this.extractIdentifiers(match.groups)
-      return { type: 'create_function', schema, objectName: name }
+      return { type: TABLE_EVENT_ACTIONS.FUNCTION_CREATED, schema, objectName: name }
     }
 
     return null
@@ -176,12 +175,12 @@ export class SQLEventParser {
    * Detects CREATE TRIGGER statements
    */
   detectCreateTrigger(sql: string): SQLEventDetails | null {
-    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(?<object>[\w"`]+)/i
-    const match = sql.match(pattern)
+    const createTriggerPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(?<object>[\w"`]+)/i
+    const match = sql.match(createTriggerPattern)
 
     if (match?.groups) {
       const { name } = this.extractIdentifiers(match.groups)
-      return { type: 'create_trigger', objectName: name }
+      return { type: TABLE_EVENT_ACTIONS.TRIGGER_CREATED, objectName: name }
     }
 
     return null
@@ -191,12 +190,12 @@ export class SQLEventParser {
    * Detects CREATE VIEW statements
    */
   detectCreateView(sql: string): SQLEventDetails | null {
-    const pattern = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
-    const match = sql.match(pattern)
+    const createViewPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
+    const match = sql.match(createViewPattern)
 
     if (match?.groups) {
       const { schema, name } = this.extractIdentifiers(match.groups)
-      return { type: 'create_view', schema, objectName: name }
+      return { type: TABLE_EVENT_ACTIONS.VIEW_CREATED, schema, objectName: name }
     }
 
     return null
@@ -204,9 +203,16 @@ export class SQLEventParser {
 
   /**
    * Type guard to check if an event is a table event
+   * @param event - SQL event to check
+   * @returns True if the event is a table-related event (has tableName instead of objectName)
    */
   private isTableEvent(event: SQLEventDetails): event is TableEventDetails {
-    return Object.values(TABLE_EVENT_ACTIONS).includes(event.type as TableEventAction)
+    const tableEvents = [
+      TABLE_EVENT_ACTIONS.TABLE_CREATED,
+      TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED,
+      TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED
+    ]
+    return tableEvents.includes(event.type)
   }
 
   /**
@@ -232,6 +238,61 @@ export class SQLEventParser {
   }
 
   /**
+   * Splits SQL into statements, attempting to handle semicolons in strings
+   * Note: This is a simplified approach that may not handle all edge cases
+   * @param sql - The SQL to split
+   * @returns Array of SQL statements
+   */
+  private splitStatements(sql: string): string[] {
+    // For now, use a simple approach that handles basic quoted strings
+    // A full parser would be needed for complete accuracy
+    const statements: string[] = []
+    let currentStatement = ''
+    let inString = false
+    let stringDelimiter = ''
+
+    for (let i = 0; i < sql.length; i++) {
+      const char = sql[i]
+
+      // Check for string delimiters
+      if ((char === "'" || char === '"')) {
+        if (!inString) {
+          inString = true
+          stringDelimiter = char
+          currentStatement += char
+        } else if (char === stringDelimiter) {
+          // Check if it's an escaped quote (doubled)
+          if (sql[i + 1] === char) {
+            currentStatement += char + char
+            i++ // Skip the next quote
+            continue
+          }
+          inString = false
+          stringDelimiter = ''
+          currentStatement += char
+        } else {
+          currentStatement += char
+        }
+      } else if (char === ';' && !inString) {
+        // Handle semicolon outside of strings
+        if (currentStatement.trim()) {
+          statements.push(currentStatement.trim())
+        }
+        currentStatement = ''
+      } else {
+        currentStatement += char
+      }
+    }
+
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim())
+    }
+
+    return statements
+  }
+
+  /**
    * Parses SQL statements for telemetry-relevant operations
    * @param sql - The SQL string to parse (can contain multiple statements)
    * @returns Array of deduplicated SQL events
@@ -242,8 +303,8 @@ export class SQLEventParser {
   parseSQLEvents(sql: string): SQLEventDetails[] {
     const results: SQLEventDetails[] = []
 
-    // Split by semicolon to handle multiple statements
-    const statements = sql.split(';').filter(s => s.trim())
+    // Split statements more intelligently
+    const statements = this.splitStatements(sql)
 
     for (const statement of statements) {
       // Check for table operations first

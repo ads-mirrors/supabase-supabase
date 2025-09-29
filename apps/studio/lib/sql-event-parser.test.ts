@@ -44,6 +44,42 @@ describe('SQL Event Parser', () => {
       const result = sqlEventParser.detectCreateTable('SELECT * FROM users')
       expect(result).toBeNull()
     })
+
+    it('detects CREATE TEMPORARY TABLE', () => {
+      const result = sqlEventParser.detectCreateTable('CREATE TEMPORARY TABLE temp_users (id INT)')
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'temp_users',
+      })
+    })
+
+    it('detects CREATE TEMP TABLE', () => {
+      const result = sqlEventParser.detectCreateTable('CREATE TEMP TABLE temp_users (id INT)')
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'temp_users',
+      })
+    })
+
+    it('detects CREATE UNLOGGED TABLE', () => {
+      const result = sqlEventParser.detectCreateTable('CREATE UNLOGGED TABLE fast_table (id INT)')
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'fast_table',
+      })
+    })
+
+    it('detects CREATE TEMP TABLE IF NOT EXISTS', () => {
+      const result = sqlEventParser.detectCreateTable('CREATE TEMP TABLE IF NOT EXISTS temp_users (id INT)')
+      expect(result).toEqual({
+        type: TABLE_EVENT_ACTIONS.TABLE_CREATED,
+        schema: undefined,
+        tableName: 'temp_users',
+      })
+    })
   })
 
   describe('detectInsert', () => {
@@ -237,7 +273,7 @@ describe('SQL Event Parser', () => {
       const results = sqlEventParser.parseSQLEvents(sql)
       expect(results).toHaveLength(3)
       expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
-      expect(results[1].type).toBe('create_function')
+      expect(results[1].type).toBe(TABLE_EVENT_ACTIONS.FUNCTION_CREATED)
       expect(results[2].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
     })
 
@@ -318,6 +354,33 @@ describe('SQL Event Parser', () => {
       const results = sqlEventParser.parseSQLEvents(sql)
       expect(results).toHaveLength(1)
       expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
+    })
+
+    it('handles semicolons inside string values', () => {
+      const sql = `
+        CREATE TABLE messages (content TEXT);
+        INSERT INTO messages VALUES ('Hello; World');
+        INSERT INTO users VALUES ('Another; Message');
+      `
+      const results = sqlEventParser.parseSQLEvents(sql)
+      expect(results).toHaveLength(3)
+      expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
+      expect(results[0].tableName).toBe('messages')
+      expect(results[1].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
+      expect(results[1].tableName).toBe('messages')
+      expect(results[2].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
+      expect(results[2].tableName).toBe('users')
+    })
+
+    it('handles escaped quotes in strings', () => {
+      const sql = `
+        INSERT INTO users VALUES ('O''Brien');
+        INSERT INTO names VALUES ('Mary''s Book');
+      `
+      const results = sqlEventParser.parseSQLEvents(sql)
+      expect(results).toHaveLength(2)
+      expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
+      expect(results[1].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
     })
 
     it('deduplicates multiple similar statements', () => {
