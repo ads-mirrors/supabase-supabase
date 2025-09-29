@@ -1,7 +1,9 @@
 packages:
   - apps/*
   - packages/*
+  - blocks/*
   - e2e/*
+
 
 catalog:
   '@supabase/auth-js': 2.72.0-rc.11
