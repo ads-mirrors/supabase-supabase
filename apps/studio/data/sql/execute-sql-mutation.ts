@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { executeSql, ExecuteSqlData, ExecuteSqlVariables } from './execute-sql-query'
 import { useSendEventMutation } from 'data/telemetry/send-event-mutation'
 import { useSelectedOrganizationQuery } from 'hooks/misc/useSelectedOrganization'
-import { getTableEvents } from 'lib/sql-event-parser'
+import { sqlEventParser } from 'lib/sql-event-parser'
 
 // [Joshen] Intention is that we invalidate all database related keys whenever running a mutation related query
 // So we attempt to ignore all the non-related query keys. We could probably look into grouping our query keys better
@@ -45,7 +45,7 @@ export const useExecuteSqlMutation = ({
 
         // Track table-related events from SQL execution
         try {
-          const tableEvents = getTableEvents(sql)
+          const tableEvents = sqlEventParser.getTableEvents(sql)
           tableEvents.forEach(event => {
             if (projectRef) {
               sendEvent({
