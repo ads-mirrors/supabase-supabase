@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sqlEventParser } from './sql-event-parser'
+import { sqlEventParser, type TableEventDetails } from './sql-event-parser'
 import { TABLE_EVENT_ACTIONS } from 'common/telemetry-constants'
 
 describe('SQL Event Parser', () => {
@@ -365,11 +365,11 @@ describe('SQL Event Parser', () => {
       const results = sqlEventParser.parseSQLEvents(sql)
       expect(results).toHaveLength(3)
       expect(results[0].type).toBe(TABLE_EVENT_ACTIONS.TABLE_CREATED)
-      expect(results[0].tableName).toBe('messages')
+      expect((results[0] as TableEventDetails).tableName).toBe('messages')
       expect(results[1].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
-      expect(results[1].tableName).toBe('messages')
+      expect((results[1] as TableEventDetails).tableName).toBe('messages')
       expect(results[2].type).toBe(TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED)
-      expect(results[2].tableName).toBe('users')
+      expect((results[2] as TableEventDetails).tableName).toBe('users')
     })
 
     it('handles escaped quotes in strings', () => {

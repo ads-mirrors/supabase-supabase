@@ -6,17 +6,19 @@
  */
 import { TABLE_EVENT_ACTIONS, type TableEventAction } from 'common/telemetry-constants'
 
-export interface SQLEventDetails {
-  type: TableEventAction
-  schema?: string
-  objectName?: string // Name of the database object (table/function/view/etc)
-}
-
 export interface TableEventDetails {
-  type: TableEventAction
+  type: 'table_created' | 'table_data_inserted' | 'table_rls_enabled'
   schema?: string
   tableName?: string
 }
+
+export interface NonTableEventDetails {
+  type: 'function_created' | 'trigger_created' | 'view_created'
+  schema?: string
+  objectName?: string // Name of the database object (function/view/trigger)
+}
+
+export type SQLEventDetails = TableEventDetails | NonTableEventDetails
 
 /**
  * SQL Event Parser class for detecting and parsing SQL operations
@@ -159,7 +161,7 @@ export class SQLEventParser {
   /**
    * Detects CREATE FUNCTION statements
    */
-  detectCreateFunction(sql: string): SQLEventDetails | null {
+  detectCreateFunction(sql: string): NonTableEventDetails | null {
     const createFunctionPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
     const match = sql.match(createFunctionPattern)
 
@@ -174,7 +176,7 @@ export class SQLEventParser {
   /**
    * Detects CREATE TRIGGER statements
    */
-  detectCreateTrigger(sql: string): SQLEventDetails | null {
+  detectCreateTrigger(sql: string): NonTableEventDetails | null {
     const createTriggerPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(?<object>[\w"`]+)/i
     const match = sql.match(createTriggerPattern)
 
@@ -189,7 +191,7 @@ export class SQLEventParser {
   /**
    * Detects CREATE VIEW statements
    */
-  detectCreateView(sql: string): SQLEventDetails | null {
+  detectCreateView(sql: string): NonTableEventDetails | null {
     const createViewPattern = /CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?<schema>(?:[\w"`]+)\.)?(?<object>[\w"`]+)/i
     const match = sql.match(createViewPattern)
 
@@ -211,8 +213,8 @@ export class SQLEventParser {
       TABLE_EVENT_ACTIONS.TABLE_CREATED,
       TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED,
       TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED
-    ]
-    return tableEvents.includes(event.type)
+    ] as const
+    return (tableEvents as readonly string[]).includes(event.type)
   }
 
   /**
@@ -226,7 +228,12 @@ export class SQLEventParser {
 
     for (const event of events) {
       // For table events, use tableName; for others use objectName
-      const name = this.isTableEvent(event) ? event.tableName : event.objectName
+      let name: string | undefined
+      if (this.isTableEvent(event)) {
+        name = event.tableName
+      } else {
+        name = event.objectName
+      }
       const key = `${event.type}:${event.schema || ''}:${name || ''}`
       if (!seen.has(key)) {
         seen.add(key)
