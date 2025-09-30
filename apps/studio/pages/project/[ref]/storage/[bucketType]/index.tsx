@@ -7,8 +7,25 @@ import { PageLayout } from 'components/layouts/PageLayout/PageLayout'
 import { ScaffoldContainer } from 'components/layouts/Scaffold'
 import StorageLayout from 'components/layouts/StorageLayout/StorageLayout'
 import { BUCKET_TYPES, DEFAULT_BUCKET_TYPE } from 'components/interfaces/Storage/Storage.constants'
+import { MediaBuckets } from 'components/interfaces/Storage/MediaBuckets'
+import { AnalyticsBuckets } from 'components/interfaces/Storage/AnalyticsBuckets'
+import { VectorsBuckets } from 'components/interfaces/Storage/VectorsBuckets'
 import type { NextPageWithLayout } from 'types'
 import { DocsButton } from 'components/ui/DocsButton'
+import { DOCS_URL } from 'lib/constants'
+
+const renderBucketTypeComponent = (bucketTypeKey: string) => {
+  switch (bucketTypeKey) {
+    case 'media':
+      return MediaBuckets()
+    case 'analytics':
+      return AnalyticsBuckets()
+    case 'vectors':
+      return VectorsBuckets()
+    default:
+      return MediaBuckets()
+  }
+}
 
 const BucketTypePage: NextPageWithLayout = () => {
   const isStorageV2 = useFlag('storageAnalyticsVector')
@@ -30,31 +47,56 @@ const BucketTypePage: NextPageWithLayout = () => {
     }
   }, [config, ref, router])
 
-  return (
-    <div>
-      {/* [Danny] Purposefully duplicated directly below StorageLayout‘s config.description for now. Will be placed in a conditional empty state in next PR. TODO: consider reusing FormHeader for non-empty state.*/}
-      <p className="text-foreground-light mb-4">{config.description}</p>
-      <DocsButton href={config.docsUrl} />
-    </div>
-  )
+  const bucketTypeResult = renderBucketTypeComponent(bucketTypeKey)
+
+  return bucketTypeResult.content
 }
 
 BucketTypePage.getLayout = (page) => {
-  // We need to get the bucketType from the router since it's not available in page.props
   const BucketTypeLayout = () => {
-    const { bucketType } = useParams()
+    const params = useParams()
+    const { bucketType, ref } = params
     const bucketTypeKey = bucketType || DEFAULT_BUCKET_TYPE
     const config = BUCKET_TYPES[bucketTypeKey as keyof typeof BUCKET_TYPES]
+
+    // Get the bucket type result to determine if it's empty
+    const bucketTypeResult = renderBucketTypeComponent(bucketTypeKey)
+
+    const navigationItems =
+      bucketTypeKey === 'media'
+        ? [
+            {
+              label: 'Buckets',
+              href: `/project/${ref}/storage/media`,
+            },
+            {
+              label: 'Settings',
+              href: `/project/${ref}/storage/settings`,
+            },
+            {
+              label: 'Policies',
+              href: `/project/${ref}/storage/policies`,
+            },
+          ]
+        : []
 
     return (
       <DefaultLayout>
         <StorageLayout title="Storage">
-          <PageLayout
-            title={`${config?.displayName || 'Storage'} Buckets`}
-            subtitle={config?.description || 'Manage your storage buckets and files.'}
-          >
-            <ScaffoldContainer>{page}</ScaffoldContainer>
-          </PageLayout>
+          {bucketTypeResult.isEmpty ? (
+            // For empty state, render directly without PageLayout/ScaffoldContainer
+            page
+          ) : (
+            // For normal state, use PageLayout with ScaffoldContainer
+            <PageLayout
+              title={`${config?.displayName || 'Storage'}`}
+              subtitle={config?.description || 'Manage your storage buckets and files.'}
+              navigationItems={navigationItems}
+              secondaryActions={[<DocsButton href={config.docsUrl} />]}
+            >
+              <ScaffoldContainer>{page}</ScaffoldContainer>
+            </PageLayout>
+          )}
         </StorageLayout>
       </DefaultLayout>
     )
