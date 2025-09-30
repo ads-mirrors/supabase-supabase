@@ -8,8 +8,6 @@ import { lintKeys } from 'data/lint/keys'
 import { tableEditorKeys } from 'data/table-editor/keys'
 import type { ResponseError } from 'types'
 import { tableKeys } from './keys'
-import { useSendEventMutation } from 'data/telemetry/send-event-mutation'
-import { useSelectedOrganizationQuery } from 'hooks/misc/useSelectedOrganization'
 
 export type UpdateTableBody = components['schemas']['UpdateTableBody']
 
@@ -53,34 +51,12 @@ export const useTableUpdateMutation = ({
   'mutationFn'
 > = {}) => {
   const queryClient = useQueryClient()
-  const { mutate: sendEvent } = useSendEventMutation()
-  const { data: org } = useSelectedOrganizationQuery()
 
   return useMutation<TableUpdateData, ResponseError, TableUpdateVariables>(
     (vars) => updateTable(vars),
     {
       async onSuccess(data, variables, context) {
         const { projectRef, schema, id, name, payload } = variables
-
-        // Track RLS enablement if it's being turned on
-        if (payload.rls_enabled === true) {
-          try {
-            sendEvent({
-              action: 'table_rls_enabled',
-              properties: {
-                method: 'table_editor',
-                schema_name: schema,
-                table_name: name,
-              },
-              groups: {
-                project: projectRef,
-                ...(org?.slug && { organization: org.slug }),
-              },
-            })
-          } catch (error) {
-            console.error('Failed to track RLS enablement event:', error)
-          }
-        }
 
         await Promise.all([
           queryClient.invalidateQueries(tableEditorKeys.tableEditor(projectRef, id)),

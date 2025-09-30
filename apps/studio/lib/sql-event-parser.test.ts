@@ -123,6 +123,7 @@ describe('SQL Event Parser', () => {
         type: TABLE_EVENT_ACTIONS.TABLE_DATA_INSERTED,
         schema: undefined,
         tableName: 'users',
+      })
     })
 
     it('detects COPY with schema', () => {

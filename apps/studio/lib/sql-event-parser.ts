@@ -43,6 +43,30 @@ export class SQLEventParser {
   }
 
   /**
+   * Helper method to match multiple regex patterns against SQL
+   * Returns the first match found, or null if none match
+   */
+  private matchPatterns(
+    sql: string,
+    patterns: RegExp[],
+    eventType: string,
+    isTableEvent: boolean = true
+  ): TableEventDetails | NonTableEventDetails | null {
+    for (const pattern of patterns) {
+      const match = sql.match(pattern)
+      if (match?.groups) {
+        const { schema, name } = this.extractIdentifiers(match.groups)
+        if (isTableEvent) {
+          return { type: eventType, schema, tableName: name } as TableEventDetails
+        } else {
+          return { type: eventType, schema, objectName: name } as NonTableEventDetails
+        }
+      }
+    }
+    return null
+  }
+
+  /**
    * Detects CREATE TABLE statements in SQL
    * @param sql - The SQL string to parse
    * @returns Table event details if a CREATE TABLE statement is found, null otherwise
@@ -51,21 +75,13 @@ export class SQLEventParser {
    * // Returns: { type: 'table_created', schema: undefined, tableName: 'users' }
    */
   detectCreateTable(sql: string): TableEventDetails | null {
-    const standardCreateTable = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
-    const temporaryTable = /CREATE\s+TEMP(?:ORARY)?\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
-    const unloggedTable = /CREATE\s+UNLOGGED\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i
+    const patterns = [
+      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i,
+      /CREATE\s+TEMP(?:ORARY)?\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i,
+      /CREATE\s+UNLOGGED\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/i,
+    ]
 
-    const patterns = [standardCreateTable, temporaryTable, unloggedTable]
-
-    for (const pattern of patterns) {
-      const match = sql.match(pattern)
-      if (match?.groups) {
-        const { schema, name } = this.extractIdentifiers(match.groups)
-        return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
-      }
-    }
-
-    return null
+    return this.matchPatterns(sql, patterns, TABLE_EVENT_ACTIONS.TABLE_CREATED, true) as TableEventDetails | null
   }
 
   /**
@@ -117,20 +133,12 @@ export class SQLEventParser {
    * // Returns: { type: 'table_created', schema: undefined, tableName: 'new_users' }
    */
   detectSelectInto(sql: string): TableEventDetails | null {
-    const selectIntoPattern = /SELECT\s+.*?\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/is
-    const createTableAsSelectPattern = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i
+    const patterns = [
+      /SELECT\s+.*?\s+INTO\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)/is,
+      /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+)\s+AS\s+SELECT/i,
+    ]
 
-    const patterns = [selectIntoPattern, createTableAsSelectPattern]
-
-    for (const pattern of patterns) {
-      const match = sql.match(pattern)
-      if (match?.groups) {
-        const { schema, name } = this.extractIdentifiers(match.groups)
-        return { type: TABLE_EVENT_ACTIONS.TABLE_CREATED, schema, tableName: name }
-      }
-    }
-
-    return null
+    return this.matchPatterns(sql, patterns, TABLE_EVENT_ACTIONS.TABLE_CREATED, true) as TableEventDetails | null
   }
 
   /**
@@ -142,20 +150,12 @@ export class SQLEventParser {
    * // Returns: { type: 'table_rls_enabled', schema: undefined, tableName: 'users' }
    */
   detectEnableRLS(sql: string): TableEventDetails | null {
-    const enableRLSLongPattern = /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i
-    const enableRLSShortPattern = /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i
+    const patterns = [
+      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+ROW\s+LEVEL\s+SECURITY/i,
+      /ALTER\s+TABLE\s+(?<schema>(?:[\w"`]+)\.)?(?<table>[\w"`]+).*?ENABLE\s+RLS/i,
+    ]
 
-    const patterns = [enableRLSLongPattern, enableRLSShortPattern]
-
-    for (const pattern of patterns) {
-      const match = sql.match(pattern)
-      if (match?.groups) {
-        const { schema, name } = this.extractIdentifiers(match.groups)
-        return { type: TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED, schema, tableName: name }
-      }
-    }
-
-    return null
+    return this.matchPatterns(sql, patterns, TABLE_EVENT_ACTIONS.TABLE_RLS_ENABLED, true) as TableEventDetails | null
   }
 
   /**
